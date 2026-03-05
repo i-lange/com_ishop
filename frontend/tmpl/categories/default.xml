@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+	<layout title="COM_ISHOP_MENU_CAT_LIST" option="View">
+		<message><![CDATA[COM_ISHOP_MENU_CAT_LIST_DESC]]></message>
+	</layout>
+	<!-- Поля выбора корневой категории для отображения -->
+	<fields name="request">
+		<fieldset name="request">
+			<field name="id"
+				   type="category"
+				   label="COM_ISHOP_MENU_FIELD_CATID"
+				   extension="com_ishop"
+				   show_root="true"
+				   required="true"/>
+		</fieldset>
+	</fields>
+
+	<!-- Настройки вывода категорий -->
+	<fields name="params">
+		<fieldset name="basic" label="JGLOBAL_CATEGORIES_OPTIONS">
+			<field name="show_base_description"
+				   type="list"
+				   label="JGLOBAL_FIELD_SHOW_BASE_DESCRIPTION_LABEL"
+				   useglobal="true"
+				   class="form-select-color-state"
+				   validate="options">
+				<option value="0">JHIDE</option>
+				<option value="1">JSHOW</option>
+			</field>
+			<field name="categories_description"
+				   type="textarea"
+				   label="JGLOBAL_FIELD_CATEGORIES_DESC_LABEL"
+				   cols="25"
+				   rows="5"/>
+			<field name="maxLevelcat"
+				   type="list"
+				   label="JGLOBAL_MAXIMUM_CATEGORY_LEVELS_LABEL"
+				   useglobal="true"
+				   validate="options">
+				<option value="-1">JALL</option>
+				<option value="1">J1</option>
+				<option value="2">J2</option>
+				<option value="3">J3</option>
+				<option value="4">J4</option>
+				<option value="5">J5</option>
+			</field>
+			<field name="show_empty_categories_cat"
+				   type="list"
+				   label="JGLOBAL_SHOW_EMPTY_CATEGORIES_LABEL"
+				   useglobal="true"
+				   class="form-select-color-state"
+				   validate="options">
+				<option value="0">JHIDE</option>
+				<option value="1">JSHOW</option>
+			</field>
+			<field name="show_subcat_desc_cat"
+				   type="list"
+				   label="JGLOBAL_SHOW_SUBCATEGORIES_DESCRIPTION_LABEL"
+				   useglobal="true"
+				   class="form-select-color-state"
+				   validate="options">
+				<option value="0">JHIDE</option>
+				<option value="1">JSHOW</option>
+			</field>
+		</fieldset>
+		<fieldset name="category" label="JGLOBAL_CATEGORY_OPTIONS" description="JGLOBAL_SUBSLIDER_DRILL_CATEGORIES_LABEL">
+			<field name="show_category_title"
+				   type="list"
+				   label="JGLOBAL_SHOW_CATEGORY_TITLE"
+				   useglobal="true"
+				   class="form-select-color-state"
+				   validate="options">
+				<option value="0">JHIDE</option>
+				<option value="1">JSHOW</option>
+			</field>
+			<field name="show_description"
+				   type="list"
+				   label="JGLOBAL_SHOW_CATEGORY_DESCRIPTION_LABEL"
+				   useglobal="true"
+				   class="form-select-color-state"
+				   validate="options">
+				<option value="0">JHIDE</option>
+				<option value="1">JSHOW</option>
+			</field>
+			<field name="show_description_image"
+				   type="list"
+				   label="JGLOBAL_SHOW_CATEGORY_IMAGE_LABEL"
+				   useglobal="true"
+				   class="form-select-color-state"
+				   validate="options">
+				<option value="0">JHIDE</option>
+				<option value="1">JSHOW</option>
+			</field>
+			<field name="maxLevel"
+				   type="list"
+				   label="JGLOBAL_MAXLEVEL_LABEL"
+				   useglobal="true"
+				   validate="options">
+				<option value="-1">JALL</option>
+				<option value="0">JNONE</option>
+				<option value="1">J1</option>
+				<option value="2">J2</option>
+				<option value="3">J3</option>
+				<option value="4">J4</option>
+				<option value="5">J5</option>
+			</field>
+			<field name="show_empty_categories"
+				   type="list"
+				   label="JGLOBAL_SHOW_EMPTY_CATEGORIES_LABEL"
+				   useglobal="true"
+				   class="form-select-color-state"
+				   validate="options">
+				<option value="0">JHIDE</option>
+				<option value="1">JSHOW</option>
+			</field>
+			<field name="show_subcat_desc"
+				   type="list"
+				   label="JGLOBAL_SHOW_SUBCATEGORIES_DESCRIPTION_LABEL"
+				   useglobal="true"
+				   class="form-select-color-state"
+				   validate="options">
+				<option value="0">JHIDE</option>
+				<option value="1">JSHOW</option>
+			</field>
+		</fieldset>
+	</fields>
+</metadata>

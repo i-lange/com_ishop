@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <fieldset name="ishop" label="COM_ISHOP">
+        <fieldset name="process" label="COM_ISHOP">
+            <field name="save_history"
+                   type="radio"
+                   label="JGLOBAL_SAVE_HISTORY_OPTIONS_LABEL"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="history_limit"
+                   type="number"
+                   label="JGLOBAL_HISTORY_LIMIT_OPTIONS_LABEL"
+                   filter="integer"
+                   validate="number"
+                   min="0"
+                   default="10"
+                   showon="save_history:1"/>
+        </fieldset>
+        <fieldset name="images" label="COM_ISHOP_IMAGES_PARAMS">
+            <field name="product_images_dir"
+                   type="text"
+                   default="/images/products/"
+                   label="COM_ISHOP_PRODUCT_IMAGES_DIR" />
+            <field name="products_images_to_cats"
+                   type="radio"
+                   label="COM_ISHOP_PRODUCT_IMAGES_TO_CATS"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="products_images_type"
+                   type="list"
+                   default="18"
+                   label="COM_ISHOP_PRODUCT_IMAGES_TYPE">
+                <option value="1">GIF</option>
+                <option value="2">JPEG</option>
+                <option value="3">PNG</option>
+                <option value="18">WEBP</option>
+            </field>
+            <field name="product_image_prefix_main"
+                   type="text"
+                   default=""
+                   hint="main__"
+                   label="COM_ISHOP_PRODUCT_IMAGE_PREFIX_MAIN" />
+            <field name="product_image_prefix_small"
+                   type="text"
+                   default=""
+                   hint="small__"
+                   label="COM_ISHOP_PRODUCT_IMAGE_PREFIX_SMALL" />
+            <field name="product_image_prefix_export"
+                   type="text"
+                   default=""
+                   hint="export__"
+                   label="COM_ISHOP_PRODUCT_IMAGE_PREFIX_EXPORT" />
+            <field name="product_image_prefix_nobg"
+                   type="text"
+                   default=""
+                   hint="nobg__"
+                   label="COM_ISHOP_PRODUCT_IMAGE_PREFIX_NOBG" />
+            <field name="product_image_prefix_info"
+                   type="text"
+                   default=""
+                   hint="info__"
+                   label="COM_ISHOP_PRODUCT_IMAGE_PREFIX_INFO" />
+            <field name="product_image_prefix_more"
+                   type="text"
+                   default=""
+                   hint="more__"
+                   label="COM_ISHOP_PRODUCT_IMAGE_PREFIX_MORE" />
+        </fieldset>
+    </fieldset>
+
+    <fieldset name="user" label="COM_ISHOP_USER_PARAMS">
+        <fieldset name="delivery_zones" label="COM_ISHOP_ZONES">
+            <field name="use_zones"
+                   type="radio"
+                   label="COM_ISHOP_FIELD_USE_ZONES"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="default_zone"
+                   type="sql"
+                   required="true"
+                   label="COM_ISHOP_FIELD_DEFAULT_ZONE"
+                   layout="joomla.form.field.list-fancy-select"
+                   query="select `id`, `title` as name from `#__ishop_delivery_zones` where `state` = 1 order by `id` ASC"
+                   key_field="id"
+                   value_field="name"
+                   default="0"
+                   showon="use_zones:1">
+                <option value="0">COM_ISHOP_FIELD_VALUE_NONE</option>
+            </field>
+        </fieldset>
+        <fieldset name="shopping_cart" label="COM_ISHOP_FIELD_CART">
+            <field name="use_cart"
+                   type="radio"
+                   label="COM_ISHOP_FIELD_USE_CART"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="cart_max_count"
+                   type="number"
+                   default="10"
+                   min="10"
+                   max="999"
+                   validate="number"
+                   label="COM_ISHOP_FIELD_CART_MAX"
+                   description="COM_ISHOP_FIELD_CART_MAX_DESC"
+                   showon="use_cart:1"/>
+        </fieldset>
+        <fieldset name="shopping_wishlist" label="COM_ISHOP_FIELD_WISHLIST">
+            <field name="use_wishlist"
+                   type="radio"
+                   label="COM_ISHOP_FIELD_USE_WISHLIST"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="wishlist_max_count"
+                   type="number"
+                   default="10"
+                   min="10"
+                   max="999"
+                   validate="number"
+                   label="COM_ISHOP_FIELD_WISHLIST_MAX"
+                   description="COM_ISHOP_FIELD_WISHLIST_MAX_DESC"
+                   showon="use_wishlist:1"/>
+        </fieldset>
+        <fieldset name="shopping_compare" label="COM_ISHOP_FIELD_COMPARE">
+            <field name="use_compare"
+                   type="radio"
+                   label="COM_ISHOP_FIELD_USE_COMPARE"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="compare_max_count"
+                   type="number"
+                   default="10"
+                   min="2"
+                   max="99"
+                   validate="number"
+                   label="COM_ISHOP_FIELD_COMPARE_MAX"
+                   description="COM_ISHOP_FIELD_COMPARE_MAX_DESC"
+                   showon="use_compare:1"/>
+            <field name="compare_group_max_count"
+                   type="number"
+                   default="10"
+                   min="2"
+                   max="9"
+                   validate="number"
+                   label="COM_ISHOP_FIELD_GROUP_COMPARE_MAX"
+                   description="COM_ISHOP_FIELD_GROUP_COMPARE_MAX_DESC"
+                   showon="use_compare:1"/>
+        </fieldset>
+        <fieldset name="shopping_viewed" label="COM_ISHOP_FIELD_VIEWED">
+            <field name="use_viewed"
+                   type="radio"
+                   label="COM_ISHOP_FIELD_USE_VIEWED"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="viewed_max_count"
+                   type="number"
+                   default="10"
+                   min="10"
+                   max="999"
+                   validate="number"
+                   label="COM_ISHOP_FIELD_VIEWED_MAX"
+                   description="COM_ISHOP_FIELD_VIEWED_MAX_DESC"
+                   showon="use_viewed:1"/>
+        </fieldset>
+    </fieldset>
+
+    <fieldset name="template" label="COM_ISHOP_TEMPLATE_PARAMS">
+        <fieldset name="template_main" label="COM_ISHOP_TEMPLATE_MAIN">
+            <field name="defaultCurrency"
+                   type="list"
+                   label="COM_ISHOP_DEFAULT_CURRENCY"
+                   default="byn"
+                   validate="options">
+                <option value="byn">BYN</option>
+                <option value="rub">RUB</option>
+                <option value="usd">USD</option>
+                <option value="eur">EUR</option>
+            </field>
+            <field name="roundPrice"
+                   type="list"
+                   label="COM_ISHOP_DEFAULT_ROUND_PRICE"
+                   default="0"
+                   validate="options">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+            </field>
+            <field name="company_name"
+                   type="text"
+                   default=""
+                   label="COM_ISHOP_COMPANY_NAME"/>
+            <field name="site_url"
+                   type="text"
+                   default=""
+                   label="COM_ISHOP_SITE_URL"/>
+        </fieldset>
+        <fieldset name="ordering" label="COM_ISHOP_TEMPLATE_ORDERING">
+            <field name="category_ordering"
+                   type="subform"
+                   label="COM_ISHOP_TEMPLATE_ORDERING"
+                   multiple="true"
+                   layout="joomla.form.field.subform.repeatable-table">
+                <form>
+                    <field name="field"
+                           type="list"
+                           label="COM_ISHOP_ORDER_FIELD"
+                           validate="options">
+                        <option value="a.price">COM_ISHOP_ORDER_PRICE</option>
+                        <option value="a.title">COM_ISHOP_ORDER_TITLE</option>
+                        <option value="a.ordering">COM_ISHOP_ORDER_ORDERING</option>
+                        <option value="a.rating">COM_ISHOP_ORDER_RATING</option>
+                        <option value="a.hits">COM_ISHOP_ORDER_HITS</option>
+                    </field>
+                    <field name="dir"
+                           type="list"
+                           label="COM_ISHOP_ORDER_DIRECTION"
+                           validate="options">
+                        <option value="ASC">COM_ISHOP_ORDER_ASC</option>
+                        <option value="DESC">COM_ISHOP_ORDER_DESC</option>
+                    </field>
+                    <field name="icon"
+                           type="text"
+                           label="COM_ISHOP_ORDER_ICON"/>
+                </form>
+            </field>
+        </fieldset>
+        <fieldset name="basic" label="JGLOBAL_CATEGORIES_OPTIONS">
+            <field name="show_base_description"
+                   type="list"
+                   label="JGLOBAL_FIELD_SHOW_BASE_DESCRIPTION_LABEL"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="maxLevelcat"
+                   type="list"
+                   label="JGLOBAL_MAXIMUM_CATEGORY_LEVELS_LABEL"
+                   validate="options">
+                <option value="-1">JALL</option>
+                <option value="1">J1</option>
+                <option value="2">J2</option>
+                <option value="3">J3</option>
+                <option value="4">J4</option>
+                <option value="5">J5</option>
+            </field>
+            <field name="show_empty_categories_cat"
+                   type="list"
+                   label="JGLOBAL_SHOW_EMPTY_CATEGORIES_LABEL"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="show_subcat_desc_cat"
+                   type="list"
+                   label="JGLOBAL_SHOW_SUBCATEGORIES_DESCRIPTION_LABEL"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+        </fieldset>
+        <fieldset name="category" label="JGLOBAL_CATEGORY_OPTIONS">
+            <field name="show_category_title"
+                   type="list"
+                   label="JGLOBAL_SHOW_CATEGORY_TITLE"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="show_description"
+                   type="list"
+                   label="JGLOBAL_SHOW_CATEGORY_DESCRIPTION_LABEL"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="show_description_image"
+                   type="list"
+                   label="JGLOBAL_SHOW_CATEGORY_IMAGE_LABEL"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="maxLevel"
+                   type="list"
+                   label="JGLOBAL_MAXLEVEL_LABEL"
+                   validate="options">
+                <option value="-1">JALL</option>
+                <option value="0">JNONE</option>
+                <option value="1">J1</option>
+                <option value="2">J2</option>
+                <option value="3">J3</option>
+                <option value="4">J4</option>
+                <option value="5">J5</option>
+            </field>
+            <field name="show_empty_categories"
+                   type="list"
+                   label="JGLOBAL_SHOW_EMPTY_CATEGORIES_LABEL"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="show_subcat_desc"
+                   type="list"
+                   label="JGLOBAL_SHOW_SUBCATEGORIES_DESCRIPTION_LABEL"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+        </fieldset>
+        <fieldset name="product" label="COM_ISHOP_TEMPLATE_PRODUCT">
+            <field name="group_default"
+                   type="sql"
+                   required="true"
+                   label="COM_ISHOP_FIELD_GROUP_DEFAULT"
+                   layout="joomla.form.field.list-fancy-select"
+                   query="select `id`, `title` as name from `#__ishop_groups` where `state` = 1 order by `id` ASC"
+                   key_field="id"
+                   value_field="name"
+                   default="0">
+                <option value="0">COM_ISHOP_FIELD_GROUP_NONE</option>
+            </field>
+            <field name="group_sizes"
+                   type="sql"
+                   required="true"
+                   label="COM_ISHOP_FIELD_GROUP_SIZE"
+                   layout="joomla.form.field.list-fancy-select"
+                   query="select `id`, `title` as name from `#__ishop_groups` where `state` = 1 order by `id` ASC"
+                   key_field="id"
+                   value_field="name"
+                   default="0">
+                <option value="0">COM_ISHOP_FIELD_GROUP_NONE</option>
+            </field>
+            <field name="group_other"
+                   type="sql"
+                   required="true"
+                   label="COM_ISHOP_FIELD_GROUP_OTHER"
+                   layout="joomla.form.field.list-fancy-select"
+                   query="select `id`, `title` as name from `#__ishop_groups` where `state` = 1 order by `id` ASC"
+                   key_field="id"
+                   value_field="name"
+                   default="0">
+                <option value="0">COM_ISHOP_FIELD_GROUP_NONE</option>
+            </field>
+            <field name="important_fields"
+                   type="sql"
+                   multiple="true"
+                   layout="joomla.form.field.list-fancy-select"
+                   label="COM_ISHOP_SHOP_IMPORTANT_FIELDS"
+                   hint="COM_ISHOP_SHOP_IMPORTANT_FIELDS_HINT"
+                   description="COM_ISHOP_SHOP_IMPORTANT_FIELDS_DESC"
+                   query="select `id`, `title` as name from `#__ishop_fields` where `state` = 1 order by `id` ASC"
+                   key_field="id"
+                   value_field="name"
+                   default="0">
+            </field>
+        </fieldset>
+    </fieldset>
+
+    <fieldset name="payments" label="COM_ISHOP_PAYMENTS_PARAMS">
+        <fieldset name="payments_general" label="COM_ISHOP_PAYMENTS_GENERAL">
+            <field name="payments_use"
+                   type="radio"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   label="COM_ISHOP_PAYMENTS_USE"
+                   filter="integer">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+        </fieldset>
+        <fieldset name="payments_parts" label="COM_ISHOP_PAYMENTS_PARTS">
+            <field name="parts_use"
+                   type="radio"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   label="COM_ISHOP_PAYMENTS_PARTS_USE"
+                   filter="integer">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="parts_cats_show"
+                   type="radio"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   label="COM_ISHOP_PAYMENTS_PARTS_CATS_SHOW"
+                   showon="parts_use:1"
+                   filter="integer">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="parts_product_show"
+                   type="radio"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   label="COM_ISHOP_PAYMENTS_PARTS_PRODUCT_SHOW"
+                   showon="parts_use:1"
+                   filter="integer">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+        </fieldset>
+    </fieldset>
+
+    <fieldset name="discounts" label="COM_ISHOP_DISCOUNTS_PARAMS">
+        <fieldset name="discounts_general" label="COM_ISHOP_DISCOUNTS_GENERAL">
+            <field name="discounts_use"
+                   type="radio"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   label="COM_ISHOP_DISCOUNTS_USE"
+                   filter="integer">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="discounts_use_auto"
+                   type="radio"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   showon="discounts_use:1"
+                   label="COM_ISHOP_DISCOUNTS_USE_AUTO"
+                   filter="integer">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="discounts_use_manual"
+                   type="radio"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   showon="discounts_use:1"
+                   label="COM_ISHOP_DISCOUNTS_USE_MANUAL"
+                   filter="integer">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+        </fieldset>
+        <fieldset name="discounts_automatic" label="COM_ISHOP_DISCOUNTS_MANUAL">
+            <field name="discounts_auto_percent"
+                   type="text"
+                   default="10"
+                   validate="number"
+                   filter="float"
+                   label="COM_ISHOP_DISCOUNTS_MANUAL_MIN_PERCENT"/>
+            <field name="discounts_auto_value"
+                   type="text"
+                   default="10"
+                   validate="number"
+                   filter="float"
+                   label="COM_ISHOP_DISCOUNTS_MANUAL_MIN_VALUE"/>
+            <field name="discounts_auto_mode"
+                   type="list"
+                   default="1"
+                   filter="integer"
+                   label="COM_ISHOP_DISCOUNTS_MANUAL_MODE">
+                <option value="1">COM_ISHOP_DISCOUNTS_MANUAL_MODE_1</option>
+                <option value="2">COM_ISHOP_DISCOUNTS_MANUAL_MODE_2</option>
+                <option value="3">COM_ISHOP_DISCOUNTS_MANUAL_MODE_3</option>
+            </field>
+        </fieldset>
+    </fieldset>
+
+	<fieldset name="integration" label="JGLOBAL_INTEGRATION_LABEL">
+        <fieldset name="integration_general" label="COM_ISHOP_GENERAL_INTEGRATION">
+            <field name="use_js"
+                   type="radio"
+                   buttons="true"
+                   layout="joomla.form.field.radio.switcher"
+                   default="1"
+                   label="COM_ISHOP_FORM_USE_JS"
+                   description="COM_ISHOP_FORM_USE_JS_DESC">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="use_css"
+                   type="radio"
+                   buttons="true"
+                   layout="joomla.form.field.radio.switcher"
+                   default="1"
+                   label="COM_ISHOP_FORM_USE_CSS"
+                   description="COM_ISHOP_FORM_USE_CSS_DESC">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+        </fieldset>
+        <fieldset name="integration_sef" label="JGLOBAL_SEF_TITLE">
+            <field name="sef_ids"
+                   type="radio"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   label="JGLOBAL_SEF_NOIDS_LABEL"
+                   filter="integer">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+        </fieldset>
+	</fieldset>
+
+    <fieldset name="permissions" label="JCONFIG_PERMISSIONS_LABEL" description="JCONFIG_PERMISSIONS_DESC">
+        <field name="rules"
+               type="rules"
+               component="com_ishop"
+               class="inputbox"
+               filter="rules"
+               validate="rules"
+               label="JCONFIG_PERMISSIONS_LABEL"
+               section="component"/>
+    </fieldset>
+</config>

@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form>
+    <config>
+        <inlinehelp button="show"/>
+    </config>
+    <fieldset name="details" label="COM_ISHOP_FORM_DETAILS"
+              addfieldprefix="Ilange\Component\Ishop\Administrator\Field">
+        <field name="id"
+               type="text"
+               default="0"
+               readonly="true"
+               class="readonly"
+               label="JGLOBAL_FIELD_ID_LABEL"/>
+        <field name="title"
+               type="text"
+               required="true"
+               maxlength="255"
+               label="COM_ISHOP_FIELD_TITLE"/>
+        <field name="alias"
+               type="text"
+               label="JFIELD_ALIAS_LABEL"
+               description="JFIELD_ALIAS_DESC"
+               hint="JFIELD_ALIAS_PLACEHOLDER"/>
+        <field name="state"
+               type="list"
+               label="JSTATUS"
+               class="form-select-color-state"
+               default="1"
+               validate="options">
+            <option value="1">JPUBLISHED</option>
+            <option value="0">JUNPUBLISHED</option>
+            <option value="2">JARCHIVED</option>
+            <option value="-2">JTRASHED</option>
+        </field>
+        <field name="type"
+               type="list"
+               label="COM_ISHOP_FIELD_CREDIT_TYPE"
+               class="form-select-color-state"
+               default="1"
+               validate="options">
+            <option value="1">COM_ISHOP_FIELD_CREDIT_TYPE_1</option>
+            <option value="2">COM_ISHOP_FIELD_CREDIT_TYPE_2</option>
+            <option value="3">COM_ISHOP_FIELD_CREDIT_TYPE_3</option>
+        </field>
+        <field name="introtext"
+               type="textarea"
+               label="COM_ISHOP_FIELD_INTROTEXT"
+               rows="3"
+               cols="30"
+               maxlength="500"
+               charcounter="true"/>
+        <field name="fulltext"
+               type="editor"
+               label="COM_ISHOP_FIELD_FULLTEXT"
+               filter="\Joomla\CMS\Component\ComponentHelper::filterText"
+               buttons="no"/>
+        <field name="icon"
+               type="text"
+               label="COM_ISHOP_FIELD_ICON"/>
+        <field name="created"
+               type="calendar"
+               label="COM_ISHOP_FIELD_CREATED_LABEL"
+               translateformat="true"
+               showtime="true"
+               filter="user_utc"/>
+        <field name="created_by"
+               type="user"
+               label="COM_ISHOP_FIELD_CREATED_BY_LABEL"
+               validate="UserId"/>
+        <field name="created_by_alias"
+               type="text"
+               label="COM_ISHOP_FIELD_CREATED_BY_ALIAS_LABEL"/>
+        <field name="modified"
+               type="calendar"
+               label="JGLOBAL_FIELD_MODIFIED_LABEL"
+               class="form-control"
+               translateformat="true"
+               showtime="true"
+               readonly="true"
+               filter="user_utc"/>
+        <field name="modified_by"
+               type="user"
+               label="JGLOBAL_FIELD_MODIFIED_BY_LABEL"
+               class="readonly"
+               readonly="true"
+               filter="unset"
+               validate="UserId"/>
+        <field name="checked_out"
+               type="hidden"
+               filter="unset"/>
+        <field name="checked_out_time"
+               type="hidden"
+               filter="unset"/>
+        <field name="ordering"
+               type="text"
+               label="JFIELD_ORDERING_LABEL"
+               default="0"/>
+    </fieldset>
+    <field name="attribs"
+           type="subform"
+           label="COM_ISHOP_FIELD_PARAMS_ZONE">
+        <form>
+            <field name="price_mode"
+                   type="list"
+                   label="COM_ISHOP_FIELD_PRICE_MODE"
+                   default="1"
+                   validate="options">
+                <option value="1">COM_ISHOP_FIELD_PRICE_MODE_1</option>
+                <option value="2">COM_ISHOP_FIELD_PRICE_MODE_2</option>
+                <option value="3">COM_ISHOP_FIELD_PRICE_MODE_3</option>
+            </field>
+            <field name="cats_label_show"
+                   type="radio"
+                   buttons="true"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   label="COM_ISHOP_FIELD_CATS_LABEL_SHOW">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="cats_label"
+                   type="list"
+                   label="COM_ISHOP_FIELD_CATS_LABEL"
+                   default="1"
+                   showon="cats_label_show:1"
+                   validate="options">
+                <option value="0">COM_ISHOP_FIELD_CATS_LABEL_0</option>
+                <option value="1">COM_ISHOP_FIELD_CATS_LABEL_1</option>
+                <option value="2">COM_ISHOP_FIELD_CATS_LABEL_2</option>
+                <option value="3">COM_ISHOP_FIELD_CATS_LABEL_3</option>
+                <option value="4">COM_ISHOP_FIELD_CATS_LABEL_4</option>
+                <option value="5">COM_ISHOP_FIELD_CATS_LABEL_5</option>
+            </field>
+            <field name="cats_label_param"
+                   type="list"
+                   label="COM_ISHOP_FIELD_LBL_PARAM"
+                   default="1"
+                   showon="cats_label_show:1"
+                   validate="options">
+                <option value="0">COM_ISHOP_FIELD_LBL_PARAM_0</option>
+                <option value="1">COM_ISHOP_FIELD_LBL_PARAM_1</option>
+                <option value="2">COM_ISHOP_FIELD_LBL_PARAM_2</option>
+                <option value="3">COM_ISHOP_FIELD_LBL_PARAM_3</option>
+            </field>
+            <field name="prod_label_show"
+                   type="radio"
+                   buttons="true"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   label="COM_ISHOP_FIELD_PROD_LABEL_SHOW">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="prod_label"
+                   type="list"
+                   label="COM_ISHOP_FIELD_PROD_LABEL"
+                   default="1"
+                   showon="prod_label_show:1"
+                   validate="options">
+                <option value="0">COM_ISHOP_FIELD_PROD_LABEL_0</option>
+                <option value="1">COM_ISHOP_FIELD_PROD_LABEL_1</option>
+                <option value="2">COM_ISHOP_FIELD_PROD_LABEL_2</option>
+                <option value="3">COM_ISHOP_FIELD_PROD_LABEL_3</option>
+                <option value="4">COM_ISHOP_FIELD_PROD_LABEL_4</option>
+                <option value="5">COM_ISHOP_FIELD_PROD_LABEL_5</option>
+                <option value="6">COM_ISHOP_FIELD_PROD_LABEL_6</option>
+                <option value="7">COM_ISHOP_FIELD_PROD_LABEL_7</option>
+                <option value="8">COM_ISHOP_FIELD_PROD_LABEL_8</option>
+            </field>
+            <field name="prod_label_param"
+                   type="list"
+                   label="COM_ISHOP_FIELD_LBL_PARAM"
+                   default="1"
+                   showon="prod_label_show:1"
+                   validate="options">
+                <option value="0">COM_ISHOP_FIELD_LBL_PARAM_0</option>
+                <option value="1">COM_ISHOP_FIELD_LBL_PARAM_1</option>
+                <option value="2">COM_ISHOP_FIELD_LBL_PARAM_2</option>
+                <option value="3">COM_ISHOP_FIELD_LBL_PARAM_3</option>
+            </field>
+            <field name="calculator_parts_show"
+                   type="radio"
+                   buttons="true"
+                   layout="joomla.form.field.radio.switcher"
+                   default="0"
+                   label="COM_ISHOP_FIELD_CALCULATOR_PARTS_SHOW">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="cats"
+                   type="category"
+                   label="JCATEGORY"
+                   multiple="true"
+                   extension="com_ishop"
+                   layout="joomla.form.field.list-fancy-select"
+                   hint="JOPTION_SELECT_CATEGORY"
+                   class="js-select-submit-on-change"
+                   published="1"/>
+            <field name="manufacturers"
+                   type="manufacturers"
+                   multiple="true"
+                   validate="options"
+                   label="COM_ISHOP_FIELD_MANUFACTURER"/>
+            <field name="first_part"
+                   type="text"
+                   default="0"
+                   filter="float"
+                   validate="number"
+                   label="COM_ISHOP_FIELD_PARTS_FIRST_PERCENT"/>
+            <field name="parts_rules"
+                   type="subform"
+                   label="COM_ISHOP_FIELD_PARTS_RULES"
+                   multiple="true"
+                   layout="joomla.form.field.subform.repeatable-table">
+                <form>
+                    <field name="period"
+                           type="number"
+                           default="3"
+                           min="2"
+                           max="1200"
+                           required="true"
+                           validate="number"
+                           label="COM_ISHOP_FIELD_PARTS_PERIOD"/>
+                    <field name="percent"
+                           type="text"
+                           default="0"
+                           required="true"
+                           filter="float"
+                           label="COM_ISHOP_FIELD_PARTS_PERCENT"/>
+                </form>
+            </field>
+        </form>
+    </field>
+    <fields name="images" label="COM_ISHOP_FIELD_IMAGE_OPTIONS">
+        <fieldset name="image-small" label="COM_ISHOP_FIELD_IMAGE_SMALL_LABEL">
+            <field name="image_small"
+                   type="media"
+                   schemes="http,https,ftp,ftps,data,file"
+                   validate="url"
+                   relative="true"
+                   label="COM_ISHOP_FIELD_IMAGE_SMALL_LABEL"/>
+            <field name="image_small_alt"
+                   type="text"
+                   label="COM_ISHOP_FIELD_IMAGE_ALT_LABEL"/>
+        </fieldset>
+        <fieldset name="image-main" label="COM_ISHOP_FIELD_IMAGE_MAIN_LABEL">
+            <field name="image_main"
+                   type="media"
+                   schemes="http,https,ftp,ftps,data,file"
+                   validate="url"
+                   relative="true"
+                   label="COM_ISHOP_FIELD_IMAGE_MAIN_LABEL"/>
+            <field name="image_main_alt"
+                   type="text"
+                   label="COM_ISHOP_FIELD_IMAGE_ALT_LABEL"/>
+        </fieldset>
+    </fields>
+</form>

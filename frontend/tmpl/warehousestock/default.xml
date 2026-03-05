@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+    <layout title="COM_ISHOP_MENU_WAREHOUSE_STOCK" option="View">
+        <message><![CDATA[COM_ISHOP_MENU_WAREHOUSE_STOCK_DESC]]></message>
+    </layout>
+    <fields name="request">
+        <fieldset name="request" addfieldprefix="Ilange\Component\Ishop\Administrator\Field">
+            <field name="id"
+                   type="warehouses"
+                   label="COM_ISHOP_MENU_FIELD_WAREHOUSE_ID"
+                   default="0"
+                   required="true"
+                   validate="options"/>
+        </fieldset>
+    </fields>
+    <fields name="params">
+
+    </fields>
+</metadata>

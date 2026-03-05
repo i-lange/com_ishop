@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+	<layout title="COM_ISHOP_VIEW_EDIT_PRODUCT_TITLE">
+		<message>
+			<![CDATA[COM_ISHOP_VIEW_EDIT_PRODUCT_DESC]]>
+		</message>
+	</layout>
+	<fieldset name="request">
+		<fields name="request">
+			<field
+				name="id"
+				type="hidden"
+				default="0"/>
+		</fields>
+	</fieldset>
+</metadata>

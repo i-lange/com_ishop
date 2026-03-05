@@ -1,0 +1,86 @@
+{
+  "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
+  "name": "com_ishop",
+  "version": "1.0.0",
+  "description": "com_ishop Assets",
+  "license": "GNU General Public License version 2 or later",
+  "assets": [
+    {
+      "name": "com_ishop.admin",
+      "type": "style",
+      "uri": "com_ishop/admin.css"
+    },
+    {
+      "name": "com_ishop.admin.min",
+      "type": "style",
+      "uri": "com_ishop/admin.min.css"
+    },
+    {
+      "name": "com_ishop.admin",
+      "type": "script",
+      "uri": "com_ishop/admin.js",
+      "attributes": {
+        "defer": true
+      }
+    },
+    {
+      "name": "com_ishop.admin.min",
+      "type": "script",
+      "uri": "com_ishop/admin.min.js",
+      "attributes": {
+        "defer": true
+      }
+    },
+    {
+      "name": "com_ishop.front",
+      "type": "style",
+      "uri": "com_ishop/front.css"
+    },
+    {
+      "name": "com_ishop.front.min",
+      "type": "style",
+      "uri": "com_ishop/front.min.css"
+    },
+    {
+      "name": "com_ishop.front",
+      "type": "script",
+      "uri": "com_ishop/front.js",
+      "dependencies": ["core"],
+      "attributes": {
+        "defer": true
+      }
+    },
+    {
+      "name": "com_ishop.front.min",
+      "type": "script",
+      "uri": "com_ishop/front.min.js",
+      "dependencies": ["core"],
+      "attributes": {
+        "defer": true
+      }
+    },
+    {
+      "name": "com_ishop.admin-product-batch",
+      "type": "script",
+      "uri": "com_ishop/admin-product-batch.js",
+      "dependencies": [
+        "com_ishop.admin-product-batch.es5"
+      ],
+      "attributes": {
+        "type": "module"
+      }
+    },
+    {
+      "name": "com_ishop.admin-product-batch.es5",
+      "type": "script",
+      "uri": "com_ishop/admin-product-batch-es5.min.js",
+      "dependencies": [
+        "core"
+      ],
+      "attributes": {
+        "nomodule": true,
+        "defer": true
+      }
+    }
+  ]
+}

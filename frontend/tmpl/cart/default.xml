@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+    <layout title="COM_ISHOP_MENU_CART" option="View">
+        <message><![CDATA[COM_ISHOP_MENU_CART_DESC]]></message>
+    </layout>
+    <fields name="params">
+
+    </fields>
+</metadata>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form>
+    <config>
+        <inlinehelp button="show"/>
+    </config>
+    <fieldset name="details" label="COM_ISHOP_FORM_DETAILS"
+              addfieldprefix="Ilange\Component\Ishop\Administrator\Field">
+        <field name="id"
+               type="text"
+               default="0"
+               readonly="true"
+               class="readonly"
+               label="JGLOBAL_FIELD_ID_LABEL"/>
+        <field name="title"
+               type="text"
+               required="true"
+               maxlength="255"
+               label="COM_ISHOP_FIELD_TITLE"/>
+        <field name="alias"
+               type="text"
+               label="JFIELD_ALIAS_LABEL"
+               description="JFIELD_ALIAS_DESC"
+               hint="JFIELD_ALIAS_PLACEHOLDER"/>
+        <field name="state"
+               type="list"
+               label="JSTATUS"
+               class="form-select-color-state"
+               default="1"
+               validate="options">
+            <option value="1">JPUBLISHED</option>
+            <option value="0">JUNPUBLISHED</option>
+            <option value="2">JARCHIVED</option>
+            <option value="-2">JTRASHED</option>
+        </field>
+        <field name="access"
+               type="accesslevel"
+               label="JFIELD_ACCESS_LABEL"
+               filter="UINT"
+               validate="options"/>
+
+
+        <field name="ishop_user_id"
+               type="sql"
+               required="true"
+               label="COM_ISHOP_FIELD_USER"
+               multiple="false"
+               layout="joomla.form.field.list-fancy-select"
+               query="select `id`, `pass` as name from `#__ishop_users` order by `id` ASC"
+               key_field="id"
+               value_field="name"
+               default="0">
+            <option value="0">COM_ISHOP_FIELD_USER</option>
+        </field>
+        <field name="products"
+               type="text"
+               label="COM_ISHOP_FIELD_PRODUCTS"/>
+        <field name="discounts"
+               type="text"
+               label="COM_ISHOP_FIELD_DISCOUNTS"/>
+        <field name="payment"
+               type="text"
+               label="COM_ISHOP_FIELD_PAYMENT"/>
+        <field name="delivery"
+               type="text"
+               label="COM_ISHOP_FIELD_DELIVERY"/>
+
+
+        <field name="created"
+               type="calendar"
+               label="COM_ISHOP_FIELD_CREATED_LABEL"
+               translateformat="true"
+               showtime="true"
+               filter="user_utc"/>
+        <field name="created_by"
+               type="user"
+               label="COM_ISHOP_FIELD_CREATED_BY_LABEL"
+               validate="UserId"/>
+        <field name="created_by_alias"
+               type="text"
+               label="COM_ISHOP_FIELD_CREATED_BY_ALIAS_LABEL"/>
+        <field name="modified"
+               type="calendar"
+               label="JGLOBAL_FIELD_MODIFIED_LABEL"
+               class="form-control"
+               translateformat="true"
+               showtime="true"
+               readonly="true"
+               filter="user_utc"/>
+        <field name="modified_by"
+               type="user"
+               label="JGLOBAL_FIELD_MODIFIED_BY_LABEL"
+               class="readonly"
+               readonly="true"
+               filter="unset"
+               validate="UserId"/>
+        <field name="checked_out"
+               type="hidden"
+               filter="unset"/>
+        <field name="checked_out_time"
+               type="hidden"
+               filter="unset"/>
+    </fieldset>
+</form>

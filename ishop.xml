@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="component" method="upgrade">
+    <name>com_ishop</name>
+    <author>Pavel Lange</author>
+    <creationDate>2026-01-21</creationDate>
+    <copyright>(C) 2022 Pavel Lange &lt;https://ilange.ru&gt;</copyright>
+    <license>GNU General Public License version 2 or later</license>
+    <authorEmail>pavel@ilange.ru</authorEmail>
+    <authorUrl>https://ilange.ru/en/contact</authorUrl>
+    <version>1.0.0</version>
+    <description>COM_ISHOP_XML_DESCRIPTION</description>
+    <namespace path="src">Ilange\Component\Ishop</namespace>
+    <scriptfile>script.php</scriptfile>
+
+    <install>
+        <sql>
+            <file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
+        </sql>
+    </install>
+    <uninstall>
+        <sql>
+            <file driver="mysql" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+        </sql>
+    </uninstall>
+    <update>
+        <schemas>
+            <schemapath type="mysql">sql/updates/mysql</schemapath>
+        </schemas>
+    </update>
+
+    <files folder="frontend">
+        <folder>language</folder>
+        <folder>src</folder>
+        <folder>tmpl</folder>
+    </files>
+
+    <languages folder="frontend">
+        <language tag="en-GB">language/en-GB/com_ishop.ini</language>
+        <language tag="ru-RU">language/ru-RU/com_ishop.ini</language>
+    </languages>
+
+    <media destination="com_ishop" folder="media">
+        <filename>joomla.asset.json</filename>
+        <folder>css</folder>
+        <folder>js</folder>
+    </media>
+
+    <administration>
+        <menu>COM_ISHOP</menu>
+        <submenu>
+            <menu link="option=com_ishop&amp;view=products">COM_ISHOP_PRODUCTS</menu>
+            <menu link="option=com_categories&amp;extension=com_ishop">JCATEGORIES</menu>
+            <menu link="option=com_ishop&amp;view=manufacturers">COM_ISHOP_MANUFACTURERS</menu>
+            <menu link="option=com_ishop&amp;view=suppliers">COM_ISHOP_SUPPLIERS</menu>
+            <menu link="option=com_ishop&amp;view=services">COM_ISHOP_SERVICES</menu>
+            <menu link="option=com_ishop&amp;view=fields">COM_ISHOP_FIELDS</menu>
+            <menu link="option=com_ishop&amp;view=warehouses">COM_ISHOP_WAREHOUSES</menu>
+            <menu link="option=com_ishop&amp;view=zones">COM_ISHOP_ZONES</menu>
+            <menu link="option=com_ishop&amp;view=payments">COM_ISHOP_PAYMENTS</menu>
+            <menu link="option=com_ishop&amp;view=deliveries">COM_ISHOP_DELIVERIES</menu>
+            <menu link="option=com_ishop&amp;view=discounts">COM_ISHOP_DISCOUNTS</menu>
+            <menu link="option=com_ishop&amp;view=orders">COM_ISHOP_ORDERS</menu>
+            <menu link="option=com_config&amp;view=component&amp;component=com_ishop">COM_ISHOP_XML_CONFIGURATION</menu>
+        </submenu>
+        <files folder="backend">
+            <file>access.xml</file>
+            <file>config.xml</file>
+            <folder>forms</folder>
+            <folder>language</folder>
+            <folder>services</folder>
+            <folder>sql</folder>
+            <folder>src</folder>
+            <folder>tmpl</folder>
+        </files>
+        <languages folder="backend">
+            <language tag="en-GB">language/en-GB/com_ishop.ini</language>
+            <language tag="en-GB">language/en-GB/com_ishop.sys.ini</language>
+            <language tag="en-GB">language/ru-RU/com_ishop.ini</language>
+            <language tag="en-GB">language/ru-RU/com_ishop.sys.ini</language>
+        </languages>
+    </administration>
+
+    <config>
+        <fields name="params">
+            <fieldset name="component">
+                <field name="save_history" default="0"/>
+            </fieldset>
+        </fields>
+    </config>
+
+    <changelogurl>https://update.ilange.ru/com_ishop/changelog.xml</changelogurl>
+    <updateservers>
+        <server type="extension" priority="1" name="com_ishop">https://update.ilange.ru/com_ishop/updates.xml</server>
+    </updateservers>
+</extension>
