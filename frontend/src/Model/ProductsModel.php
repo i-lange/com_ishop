@@ -14,6 +14,7 @@ defined('_JEXEC') or die;
 use DateTime;
 use Ilange\Component\Ishop\Site\Helper\PriceHelper;
 use Ilange\Component\Ishop\Site\Helper\ProductHelper;
+use Ilange\Component\Ishop\Site\Helper\QueryHelper;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
@@ -58,6 +59,7 @@ class ProductsModel extends ListModel
                 'hits', 'a.hits',
                 'min_price', 'a.min_price',
                 'max_price', 'a.max_price',
+                'good_price', 'a.good_price',
                 'ishop_fields', 'a.ishop_fields',
                 'manufacturers', 'a.manufacturers', 'a.manufacturer_id',
                 'publish_up', 'a.publish_up',
@@ -153,6 +155,15 @@ class ProductsModel extends ListModel
         }
         $this->setState('filter.max_price', $value);
 
+        // Фильтрация по наличию скидок
+        $value = (int) $input->get('good_price', 0, 'uint');
+        // Фильтр по скидкам работает, если скидки включены в настройках компонента
+        if ($params->get('discounts_use', 0)) {
+            $this->setState('filter.good_price', $value);
+        } else {
+            $this->setState('filter.good_price', 0);
+        }
+
         // Фильтрация, характеристики товаров
         $ishop_fields = $input->get('ishop_fields', []);
         if (!empty($ishop_fields)) {
@@ -225,6 +236,7 @@ class ProductsModel extends ListModel
      */
     protected function getListQuery()
     {
+        $params = $this->getState('params');
         $user = $this->getCurrentUser();
         $db = $this->getDatabase();
         $query = $db->getQuery(true);
@@ -382,6 +394,15 @@ class ProductsModel extends ListModel
             if ($max_width) $query->where($db->qn('a.width') . ' <= ' . $max_width);
         }
 
+        // Фильтрация, по наличию скидки на товар
+        if ($this->getState('filter.good_price', 0) > 0) {
+            $where_sales = QueryHelper::getDiscountFilterQuery();
+
+            if (!empty($where_sales)) {
+                $query->where($where_sales);
+            }
+        }
+
         // Фильтрация, по высоте
         $min_height = $this->getState('filter.min_height', 0);
         $max_height = $this->getState('filter.max_height', 0);
@@ -474,7 +495,7 @@ class ProductsModel extends ListModel
                 $categoryId = (int) $categoryId;
                 $levels     = (int) $this->getState('filter.max_category_levels', 1);
 
-                // Создаем подзапрос для списка подкатегорий
+                // Создаем вложенный запрос для списка подкатегорий
                 $subQuery = $db->getQuery(true)
                     ->select($db->quoteName('sub.id'))
                     ->from($db->quoteName('#__categories', 'sub'))
@@ -529,7 +550,7 @@ class ProductsModel extends ListModel
         // Фильтрация, по наличию на складах
         $warehouses  = $this->getState('filter.warehouses');
         $warehouses = ArrayHelper::toInteger($warehouses);
-        if ($warehouses && $warehouses[0] !== 0) {
+        if (!empty($warehouses) && $warehouses[0] !== 0) {
             // Дополнительный запрос для проверки
             // наличия товаров хотя бы на одном из складов #__ishop_warehouses_stock
             $stockQuery = $db->getQuery(true)
@@ -643,21 +664,6 @@ class ProductsModel extends ListModel
         $wishlist = $this->getMVCFactory()->createModel('Wishlist', 'Site')->getWishlistList();
         // Текущий список сравнения пользователя
         $compare = $this->getMVCFactory()->createModel('Compare', 'Site')->getCompareList();
-
-        // Флаг использования скидок на сайте
-        $canUseDiscounts = $params->get('discounts_use', 0);
-        // Флаг использования предустановленных скидок на сайте
-        $canUseManualDiscounts = $params->get('discounts_use_manual', 0);
-        // Флаг использования автоматических скидок на сайте
-        $canUseAutoDiscounts = $params->get('discounts_use_auto', 0);
-        // Параметры расчета автоматических скидок
-        $min_percent = $params->get('discounts_auto_percent', 0);
-        $min_value   = $params->get('discounts_auto_value', 0);
-        // Способ вычисления автоматических скидок
-        // 1 - От цены закупки
-        // 2 - От старой цены
-        // 3 - От основной цены
-        $AutoDiscountsMode = $params->get('discounts_auto_mode', 1);
 
         foreach ($items as $item) {
             // Дополнительные атрибуты
@@ -776,96 +782,7 @@ class ProductsModel extends ListModel
             $item->fullname = $item->prefix . ' ' . $item->manufacturer_title . ' ' . $item->title;
 
             // По-умолчанию размер скидки в процентах равен 0
-            $item->discount_size = 0;
-
-            // Если применение скидок отключено - переходим к следующему товару
-            if (!$canUseDiscounts) {
-                continue;
-            }
-
-            // Если применение скидок включено
-            // Проверим, используются ли предустановленные скидки
-            if ($canUseManualDiscounts) {
-                // Если для товара были заданы старая цена и цена со скидкой,
-                // рассчитаем размер скидки в процентах
-                if ($item->old_price > 0 && $item->sale_price > 0) {
-                    $item->discount_size = round(100 - ($item->sale_price / $item->old_price * 100));
-                }
-            }
-
-            // Проверим, используются ли автоматические скидки
-            // Автоматические скидки применяются, если на товар не действует предустановленные скидки
-            // Однако у товара должна быть установлена старая цена
-            if ($canUseAutoDiscounts && ($item->discount_size === 0) && $item->old_price > 0) {
-                if (!$min_percent && !$min_value) {
-                    continue;
-                }
-
-                switch ($AutoDiscountsMode) {
-                    // 1 - От цены закупки
-                    case 1:
-                        // Для расчета от цены закупки у товара должны быть заданы:
-                        // - цена закупки товара cost_price
-                        // - основная цена товара price
-                        if ($item->cost_price > 0 && $item->price > 0) {
-                            $current_percent  = round(100 - ($item->cost_price / $item->price * 100));
-                            $current_value    = $item->price - $item->cost_price;
-
-                            if ($min_percent > 0 && $min_percent <= $current_percent) {
-                                $item->discount_size = round(100 - ($item->price / $item->old_price * 100));
-                                break;
-                            }
-
-                            if ($min_value > 0 && $min_value <= $current_value) {
-                                $item->discount_size = round(100 - ($item->price / $item->old_price * 100));
-                            }
-                        }
-
-                        break;
-
-                    // 2 - От старой цены
-                    case 2:
-                        // Для расчета от старой цены у товара должны быть заданы:
-                        // - старая цена товара old_price
-                        // - основная цена товара price
-                        if ($item->price > 0) {
-                            $current_percent = round(100 - ($item->price / $item->old_price * 100));
-                            $current_value   = $item->old_price - $item->price;
-
-                            if ($min_percent > 0 && $min_percent <= $current_percent) {
-                                $item->discount_size = $current_percent;
-                                break;
-                            }
-
-                            if ($min_value > 0 && $min_value <= $current_value) {
-                                $item->discount_size = $current_percent;
-                            }
-                        }
-
-                        break;
-
-                    // 3 - От основной цены
-                    case 3:
-                        // Для расчета от основной цены у товара должны быть заданы:
-                        // - основная цена товара price
-                        // - цена товара со скидкой sale_price
-                        if ($item->price > 0 && $item->sale_price > 0) {
-                            $current_percent = round(100 - ($item->sale_price / $item->price * 100));
-                            $current_value   = $item->price - $item->sale_price;
-
-                            if ($min_percent > 0 && $min_percent <= $current_percent) {
-                                $item->discount_size = round(100 - ($item->price / $item->old_price * 100));
-                                break;
-                            }
-
-                            if ($min_value > 0 && $min_value <= $current_value) {
-                                $item->discount_size = round(100 - ($item->price / $item->old_price * 100));
-                            }
-                        }
-
-                        break;
-                }
-            }
+            $item->discount_size = PriceHelper::getDiscountSize($item, 2);
         }
 
         return $items;

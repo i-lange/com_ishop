@@ -25,133 +25,83 @@ class QueryHelper
     /**
      * Переводит код сортировки в столбец для запроса сортировки категории
      *
-     * @param string $order_by код сортировки
+     * @param   string  $ordering  код сортировки
      *
      * @return string SQL столбцы для order by
      * @since 1.0.0
      */
-    public static function orderbyPrimary($order_by)
+    public static function orderByPrimary(string $ordering)
     {
-        switch ($order_by) {
-            case 'alpha':
-                $order_by = 'c.path, ';
-                break;
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
 
-            case 'ralpha':
-                $order_by = 'c.path DESC, ';
+        switch ($ordering) {
+            case 'alpha':
+                $ordering = $db->qn('c.path') . ', ';
                 break;
 
             case 'order':
-                $order_by = 'c.lft, ';
+                $ordering = $db->qn('c.lft') . ', ';
                 break;
 
             default:
-                $order_by = '';
+                $ordering = '';
                 break;
         }
 
-        return $order_by;
+        return $ordering;
     }
 
     /**
      * Переводит код сортировки в столбец для запроса сортировки товаров
      *
-     * @param   string              $orderby    код сортировки
+     * @param   string              $ordering   код сортировки
      * @param   string              $orderDate  код сортировки для даты
      * @param   ?DatabaseInterface  $db         база данных
      *
      * @return  string  SQL столбцы для order by
      * @since   1.0.0
      */
-    public static function orderbySecondary($orderby, $orderDate = 'created', ?DatabaseInterface $db = null)
+    public static function orderBySecondary(string $ordering, string $orderDate = 'created', ?DatabaseInterface $db = null)
     {
-        $db = $db ?: $db = Factory::getContainer()->get(DatabaseInterface::class);;
+        $db = $db ?: Factory::getContainer()->get(DatabaseInterface::class);
 
         $queryDate = self::getQueryDate($orderDate, $db);
 
-        switch ($orderby) {
+        switch ($ordering) {
             case 'date':
-                $orderby = $queryDate;
+                $ordering = $queryDate;
                 break;
 
-            case 'rdate':
-                $orderby = $queryDate . ' DESC ';
+            case 'r_date':
+                $ordering = $queryDate . ' DESC ';
                 break;
 
             case 'alpha':
-                $orderby = 'a.title';
-                break;
-
-            case 'ralpha':
-                $orderby = 'a.title DESC';
+                $ordering = $db->qn('a.title');
                 break;
 
             case 'hits':
-                $orderby = 'a.hits DESC';
+                $ordering = $db->qn('a.hits') . ' DESC';
                 break;
 
-            case 'rhits':
-                $orderby = 'a.hits';
-                break;
-
-            case 'rorder':
-                $orderby = 'a.ordering DESC';
-                break;
-
-            case 'author':
-                $orderby = 'author';
-                break;
-
-            case 'rauthor':
-                $orderby = 'author DESC';
-                break;
-
-            case 'front':
-                $orderby = 'a.featured DESC, fp.ordering, ' . $queryDate . ' DESC ';
+            case 'featured':
+                $ordering = $db->qn('a.featured') . ' DESC, ' . $queryDate . ' DESC ';
                 break;
 
             case 'random':
-                $orderby = $db->getQuery(true)->rand();
+                $ordering = $db->getQuery(true)->rand();
                 break;
 
-            case 'vote':
-                $orderby = 'a.id DESC ';
-
-                if (PluginHelper::isEnabled('content', 'vote')) {
-                    $orderby = 'rating_count DESC ';
-                }
-                break;
-
-            case 'rvote':
-                $orderby = 'a.id ASC ';
-
-                if (PluginHelper::isEnabled('content', 'vote')) {
-                    $orderby = 'rating_count ASC ';
-                }
-                break;
-
-            case 'rank':
-                $orderby = 'a.id DESC ';
-
-                if (PluginHelper::isEnabled('content', 'vote')) {
-                    $orderby = 'rating DESC ';
-                }
-                break;
-
-            case 'rrank':
-                $orderby = 'a.id ASC ';
-
-                if (PluginHelper::isEnabled('content', 'vote')) {
-                    $orderby = 'rating ASC ';
-                }
+            case 'r_order':
+                $ordering = $db->qn('a.ordering') . ' DESC';
                 break;
 
             default:
-                $orderby = 'a.ordering';
+                $ordering = $db->qn('a.ordering');
                 break;
         }
 
-        return $orderby;
+        return $ordering;
     }
 
     /**
@@ -165,19 +115,28 @@ class QueryHelper
      */
     public static function getQueryDate($orderDate, ?DatabaseInterface $db = null)
     {
-        $db = $db ?: Factory::getDbo();
+        $db = $db ?: Factory::getContainer()->get(DatabaseInterface::class);
 
         switch ($orderDate) {
             case 'modified':
-                $queryDate = ' CASE WHEN a.modified IS NULL THEN a.created ELSE a.modified END';
+                $queryDate =
+                    ' CASE WHEN ' . $db->qn('a.modified') .
+                    ' IS NULL THEN ' . $db->qn('a.created') .
+                    ' ELSE ' . $db->qn('a.modified') . ' END';
                 break;
 
             case 'published':
-                $queryDate = ' CASE WHEN a.publish_up IS NULL THEN a.created ELSE a.publish_up END ';
+                $queryDate =
+                    ' CASE WHEN ' . $db->qn('a.publish_up') .
+                    ' IS NULL THEN ' . $db->qn('a.created') .
+                    ' ELSE ' . $db->qn('a.publish_up') . ' END ';
                 break;
 
             case 'unpublished':
-                $queryDate = ' CASE WHEN a.publish_down IS NULL THEN a.created ELSE a.publish_down END ';
+                $queryDate =
+                    ' CASE WHEN ' . $db->qn('a.publish_down') .
+                    ' IS NULL THEN ' . $db->qn('a.created') .
+                    ' ELSE ' . $db->qn('a.publish_down') . ' END ';
                 break;
 
             case 'created':
@@ -187,5 +146,135 @@ class QueryHelper
         }
 
         return $queryDate;
+    }
+
+    /**
+     * Возвращает SQL для отбора товаров по наличию скидки
+     *
+     * @return  string SQL условий отбора товаров
+     * @since 1.0.0
+     */
+    public static function getDiscountFilterQuery(): string
+    {
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        // Изначально собираем массив условий,
+        // любое из которых должно выполняться
+        $sql = [];
+
+        // Параметры компонента
+        $params = ComponentHelper::getParams('com_ishop');
+
+        // Если применение скидок отключено - размер скидки всегда 0
+        if (!$params->get('discounts_use', 0)) {
+            return '';
+        }
+
+        // Проверим, используются ли автоматические скидки
+        // Фильтр по автоматическим скидкам имеет приоритет для бизнеса
+        // и применяется в первую очередь
+        if ($params->get('discounts_use_auto', 0)) {
+            // Параметры расчета автоматических скидок
+            $target_percent  = $params->get('discounts_auto_percent', 0);
+            $target_value    = $params->get('discounts_auto_value', 0);
+
+            // Если оба параметры равны нулю,
+            // значит подойдут любые товары с разницей в ценах больше нуля
+            if (!$target_percent && !$target_value) {
+                // Если для товара были заданы старая цена и цена со скидкой
+                $sql[] = '(' . $db->qn('a.old_price') . ' > 0 AND ' . $db->qn('a.sale_price') . ' > 0 AND (' . $db->qn('a.old_price') . ' - ' . $db->qn('a.sale_price') . ') > 0)';
+
+                // Если для товара были заданы только основная цена и цена со скидкой
+                $sql[] = '(' . $db->qn('a.price') . ' > 0 AND ' . $db->qn('a.sale_price') . ' > 0 AND (' . $db->qn('a.price') . ' - ' . $db->qn('a.sale_price') . ') > 0)';
+
+                // Если для товара были заданы старая цена и только основная цена
+                $sql[] = '(' . $db->qn('a.old_price') . ' > 0 AND ' . $db->qn('a.price') . ' > 0 AND (' . $db->qn('a.old_price') . ' - ' . $db->qn('a.price') . ') > 0)';
+            }
+
+            // Способ отбора товаров для автоматических скидок
+            switch ($params->get('discounts_auto_mode', 1)) {
+                // Способ 1 - ([старая цена] - [цена закупки]) / [цена закупки]
+                case 1:
+                    // Для отбора должны быть заданы: old_price и cost_price
+                    if ($target_percent > 0) {
+                        $sql[] =
+                            '(' .
+                            $db->qn('a.old_price') .  ' > 0 AND ' .
+                            $db->qn('a.cost_price') . ' > 0 AND ' .
+                            '(' . $db->qn('a.old_price') . ' - ' . $db->qn('a.cost_price') . ') / ' . $db->qn('a.cost_price') . ' * 100 >= ' . $target_percent .
+                            ')';
+                    }
+
+                    if ($target_value > 0) {
+                        $sql[] =
+                            '(' .
+                            $db->qn('a.old_price') .  ' > 0 AND ' .
+                            $db->qn('a.cost_price') . ' > 0 AND ' .
+                            '(' . $db->qn('a.old_price') . ' - ' . $db->qn('a.cost_price') . ') >= ' . $target_value .
+                            ')';
+                    }
+
+                    break;
+
+                // Способ 2 - ([основная цена] - [цена закупки]) / [цена закупки]
+                case 2:
+                    // Для отбора должны быть заданы: price и cost_price
+                    if ($target_percent > 0) {
+                        $sql[] =
+                            '(' .
+                            $db->qn('a.price') .      ' > 0 AND ' .
+                            $db->qn('a.cost_price') . ' > 0 AND ' .
+                            '(' . $db->qn('a.price') . ' - ' . $db->qn('a.cost_price') . ') / ' . $db->qn('a.cost_price') . ' * 100 >= ' . $target_percent .
+                            ')';
+                    }
+
+                    if ($target_value > 0) {
+                        $sql[] =
+                            '(' .
+                            $db->qn('a.price') .      ' > 0 AND ' .
+                            $db->qn('a.cost_price') . ' > 0 AND ' .
+                            '(' . $db->qn('a.price') . ' - ' . $db->qn('a.cost_price') . ') >= ' . $target_value .
+                            ')';
+                    }
+
+                    break;
+
+                // Способ 3 - ([цена со скидкой] - [цена закупки]) / [цена закупки]
+                case 3:
+                    // Для отбора должны быть заданы: sale_price и cost_price
+                    if ($target_percent > 0) {
+                        $sql[] =
+                            '(' .
+                            $db->qn('a.sale_price') . ' > 0 AND ' .
+                            $db->qn('a.cost_price') . ' > 0 AND ' .
+                            '(' . $db->qn('a.sale_price') . ' - ' . $db->qn('a.cost_price') . ') / ' . $db->qn('a.cost_price') . ' * 100 >= ' . $target_percent .
+                            ')';
+                    }
+
+                    if ($target_value > 0) {
+                        $sql[] =
+                            '(' .
+                            $db->qn('a.sale_price') . ' > 0 AND ' .
+                            $db->qn('a.cost_price') . ' > 0 AND ' .
+                            '(' . $db->qn('a.sale_price') . ' - ' . $db->qn('a.cost_price') . ') >= ' . $target_value .
+                            ')';
+                    }
+
+                    break;
+            }
+
+            // Проверим, используются ли предустановленные скидки
+            if ($params->get('discounts_use_manual', 0) && empty($sql)) {
+                // Если для товара были заданы старая цена и цена со скидкой
+                $sql[] = '(' . $db->qn('a.old_price') . ' > 0 AND ' . $db->qn('a.sale_price') . ' > 0 AND (' . $db->qn('a.old_price') . ' - ' . $db->qn('a.sale_price') . ') > 0)';
+
+                // Если для товара были заданы только основная цена и цена со скидкой
+                $sql[] = '(' . $db->qn('a.price') . ' > 0 AND ' . $db->qn('a.sale_price') . ' > 0 AND (' . $db->qn('a.price') . ' - ' . $db->qn('a.sale_price') . ') > 0)';
+
+                // Если для товара были заданы старая цена и только основная цена
+                $sql[] = '(' . $db->qn('a.old_price') . ' > 0 AND ' . $db->qn('a.price') . ' > 0 AND (' . $db->qn('a.old_price') . ' - ' . $db->qn('a.price') . ') > 0)';
+            }
+        }
+
+        return '(' . implode(' OR ', $sql) . ')';
     }
 }

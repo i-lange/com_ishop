@@ -141,4 +141,116 @@ class PriceHelper
         return $product->price;
     }
 
+    /**
+     * Возвращает величину скидки указанного товара в процентах
+     *
+     * @param   object $product объект товара
+     * @param   int $precision количество знаков после запятой
+     *
+     * @return  float  искомое значение в процентах
+     * @since 1.0.0
+     */
+    public static function getDiscountSize(object $product, int $precision = 0)
+    {
+        // Параметры компонента
+        $params = ComponentHelper::getParams('com_ishop');
+
+        // Если применение скидок отключено - размер скидки всегда 0
+        if (!$params->get('discounts_use', 0)) {
+            return 0;
+        }
+
+        // Проверим, используются ли предустановленные скидки
+        if ($params->get('discounts_use_manual', 0)) {
+            return self::calculateDiscount($product);
+        }
+
+        // Проверим, используются ли автоматические скидки
+        // Автоматические скидки применяются, если на товар не действует предустановленные скидки
+        if ($params->get('discounts_use_auto', 0)) {
+            // Параметры расчета автоматических скидок
+            $target_percent  = $params->get('discounts_auto_percent', 0);
+            $target_value    = $params->get('discounts_auto_value', 0);
+            $current_value   = 0;
+            $current_percent = 0;
+
+            // Если оба параметры равны нулю,
+            // значит подойдут любые товары с разницей в ценах больше нуля
+            if (!$target_percent && !$target_value) {
+                return self::calculateDiscount($product);
+            }
+
+            // Способ отбора товаров для автоматических скидок
+            switch ($params->get('discounts_auto_mode', 1)) {
+                // Способ 1 - ([старая цена] - [цена закупки]) / [цена закупки]
+                case 1:
+                    // Для расчета должны быть заданы: old_price и cost_price
+                    if ($product->old_price > 0 && $product->cost_price > 0) {
+                        $current_value    = $product->old_price - $product->cost_price;
+                        $current_percent  = round($current_value / $product->cost_price * 100, $precision);
+                    }
+
+                    break;
+
+                // Способ 2 - ([основная цена] - [цена закупки]) / [цена закупки]
+                case 2:
+                    // Для расчета должны быть заданы: price и cost_price
+                    if ($product->price > 0 && $product->cost_price > 0) {
+                        $current_value   = $product->price - $product->cost_price;
+                        $current_percent = round($current_value / $product->cost_price * 100, $precision);
+                    }
+
+                    break;
+
+                // Способ 3 - ([цена со скидкой] - [цена закупки]) / [цена закупки]
+                case 3:
+                    // Для расчета должны быть заданы: price и cost_price
+                    if ($product->sale_price > 0 && $product->cost_price > 0) {
+                        $current_value   = $product->sale_price - $product->cost_price;
+                        $current_percent = round($current_value / $product->cost_price * 100, $precision);
+                    }
+
+                    break;
+            }
+
+            if ($target_percent > 0 && $current_percent >= $target_percent) {
+                return self::calculateDiscount($product);
+            }
+
+            if ($target_value > 0 && $current_value >= $target_value) {
+                return self::calculateDiscount($product);
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Рассчитывает величину скидки в процентах с округлением
+     *
+     * @param   object $product объект товара
+     *
+     * @return  float результат расчета в процентах
+     * @since 1.0.0
+     */
+    public static function calculateDiscount(object $product)
+    {
+        // Размер скидки
+        $discount_size = 0;
+
+        // Рассчитаем размер скидки в процентах
+        if ($product->old_price > 0 && $product->sale_price > 0) {
+            // Если для товара были заданы старая цена и цена со скидкой
+            $discount_size = round(($product->old_price - $product->sale_price) / $product->old_price * 100);
+        } elseif ($product->price > 0 && $product->sale_price > 0) {
+            // Если для товара были заданы только основная цена и цена со скидкой
+            $discount_size = round(($product->price - $product->sale_price) / $product->price * 100);
+        } elseif ($product->old_price > 0 && $product->price > 0) {
+            // Если для товара были заданы старая цена и только основная цена
+            $discount_size = round(($product->old_price - $product->price) / $product->old_price * 100);
+        }
+
+        // Возвращаем результат, если он больше нуля
+        return ($discount_size > 0) ? $discount_size : 0;
+    }
 }

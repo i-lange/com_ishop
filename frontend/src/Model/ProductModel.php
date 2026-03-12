@@ -386,8 +386,8 @@ class ProductModel extends ItemModel
                 // Устанавливаем параметры оплаты частями
                 $this->setPaymentsPart($data);
 
-                // Устанавливаем параметры скидок
-                $this->setDiscounts($data);
+                // По-умолчанию размер скидки в процентах равен 0
+                $data->discount_size = PriceHelper::getDiscountSize($data, 2);
 
                 $this->_item[$pk] = $data;
 
@@ -756,127 +756,6 @@ class ProductModel extends ItemModel
                 unset($rules);
 
                 $data->parts[] = $current;
-            }
-        }
-    }
-
-    /**
-     * Устанавливает параметры скидок
-     *
-     * @param   object  $data  Данные товара
-     *
-     * @return void
-     * @throws \Exception
-     * @since 1.0.0
-     */
-    private function setDiscounts(object $data)
-    {
-        $params = ComponentHelper::getParams('com_ishop');
-
-        // Флаг использования скидок на сайте
-        $canUseDiscounts = $params->get('discounts_use', 0);
-        // Флаг использования предустановленных скидок на сайте
-        $canUseManualDiscounts = $params->get('discounts_use_manual', 0);
-        // Флаг использования автоматических скидок на сайте
-        $canUseAutoDiscounts = $params->get('discounts_use_auto', 0);
-        // Параметры расчета автоматических скидок
-        $min_percent = $params->get('discounts_auto_percent', 0);
-        $min_value   = $params->get('discounts_auto_value', 0);
-        // Способ вычисления автоматических скидок
-        // 1 - От цены закупки
-        // 2 - От старой цены
-        // 3 - От основной цены
-        $AutoDiscountsMode = $params->get('discounts_auto_mode', 1);
-
-        // По-умолчанию размер скидки в процентах равен 0
-        $data->discount_size = 0;
-
-        // Если применение скидок отключено - завершаем обработку товара
-        if (!$canUseDiscounts) {
-            return;
-        }
-
-        // Если применение скидок включено
-        // Проверим, используются ли предустановленные скидки
-        if ($canUseManualDiscounts) {
-            // Если для товара были заданы старая цена и цена со скидкой,
-            // рассчитаем размер скидки в процентах
-            if ($data->old_price > 0 && $data->sale_price > 0) {
-                $data->discount_size = round(100 - ($data->sale_price / $data->old_price * 100));
-            }
-        }
-
-        // Проверим, используются ли автоматические скидки
-        // Автоматические скидки применяются, если на товар не действует предустановленные скидки
-        // Однако у товара должна быть установлена старая цена
-        if ($canUseAutoDiscounts && ($data->discount_size === 0) && $data->old_price > 0) {
-            if (!$min_percent && !$min_value) {
-                return;
-            }
-
-            switch ($AutoDiscountsMode) {
-                // 1 - От цены закупки
-                case 1:
-                    // Для расчета от цены закупки у товара должны быть заданы:
-                    // - цена закупки товара cost_price
-                    // - основная цена товара price
-                    if ($data->cost_price > 0 && $data->price > 0) {
-                        $current_percent = round(100 - ($data->cost_price / $data->price * 100));
-                        $current_value   = $data->price - $data->cost_price;
-
-                        if ($min_percent > 0 && $min_percent <= $current_percent) {
-                            $data->discount_size = round(100 - ($data->price / $data->old_price * 100));
-                            break;
-                        }
-
-                        if ($min_value > 0 && $min_value <= $current_value) {
-                            $data->discount_size = round(100 - ($data->price / $data->old_price * 100));
-                        }
-                    }
-
-                    break;
-
-                // 2 - От старой цены
-                case 2:
-                    // Для расчета от старой цены у товара должны быть заданы:
-                    // - старая цена товара old_price
-                    // - основная цена товара price
-                    if ($data->price > 0) {
-                        $current_percent = round(100 - ($data->price / $data->old_price * 100));
-                        $current_value   = $data->old_price - $data->price;
-
-                        if ($min_percent > 0 && $min_percent <= $current_percent) {
-                            $data->discount_size = $current_percent;
-                            break;
-                        }
-
-                        if ($min_value > 0 && $min_value <= $current_value) {
-                            $data->discount_size = $current_percent;
-                        }
-                    }
-
-                    break;
-
-                // 3 - От основной цены
-                case 3:
-                    // Для расчета от основной цены у товара должны быть заданы:
-                    // - основная цена товара price
-                    // - цена товара со скидкой sale_price
-                    if ($data->price > 0 && $data->sale_price > 0) {
-                        $current_percent = round(100 - ($data->sale_price / $data->price * 100));
-                        $current_value   = $data->price - $data->sale_price;
-
-                        if ($min_percent > 0 && $min_percent <= $current_percent) {
-                            $data->discount_size = round(100 - ($data->price / $data->old_price * 100));
-                            break;
-                        }
-
-                        if ($min_value > 0 && $min_value <= $current_value) {
-                            $data->discount_size = round(100 - ($data->price / $data->old_price * 100));
-                        }
-                    }
-
-                    break;
             }
         }
     }
