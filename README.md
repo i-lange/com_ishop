@@ -1,5 +1,5 @@
 # Компонент iShop
-## _Расширение для CMS_ ![Расширение для Joomla!](https://cdn.joomla.org/images/Joomla_logo.png) _Joomla! v4.2+_
+## _Расширение для CMS_ ![Расширение для Joomla!](https://cdn.joomla.org/images/Joomla_logo.png) _Joomla! v6.0+_
 [![N|iLange.ru](https://lange.ru/templates/ilange/images/logo.svg)](https://lange.ru)
 
 ## Компонент для электронной коммерции
