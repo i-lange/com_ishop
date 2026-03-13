@@ -6,70 +6,163 @@
 - `npm run build` - Build the project (if applicable)
 - `npm run lint` - Run linting checks
 - `npm run test` - Run all tests
-- `npm run test:unit` - Run unit tests
-- `npm run test:integration` - Run integration tests
+- `php vendor/bin/phpunit --filter testName path/to/test/file.php` - Run single PHP test
+- `npm test -- --testNamePattern="test name"` - Run single JS/TS test
 
-### Running Single Tests
-- For PHP projects, use PHPUnit to run specific tests:
-  ```
-  php vendor/bin/phpunit --filter testName path/to/test/file.php
-  ```
-- For JavaScript/TypeScript projects, use Jest or similar:
-  ```
-  npm test -- --testNamePattern="test name"
-  ```
+### Testing Notes
+- No PHPUnit configuration currently present in the project root
+- Tests should follow Joomla! 6 testing conventions when implemented
+- Use `--filter` flag to target specific test methods in PHP
 
-### Code Style Guidelines
+## Code Style Guidelines
 
-#### Imports
-- PHP: Use PSR-4 autoloading standards
-- JavaScript: Follow ES6 module syntax with explicit imports
-- All imports should be at the top of files
+### PHP (Joomla! Component)
+All PHP code follows **Joomla! coding standards** and **PSR-12** guidelines:
 
-#### Formatting
-- PHP: Follow PSR-2 coding standards
-- JavaScript/TypeScript: Use Prettier for consistent formatting
-- Maintain consistent indentation (4 spaces for PHP, 2 spaces for JS)
+#### Namespace Convention
+- Backend: `Ilange\Component\Ishop\Administrator\{Namespace}`
+- Frontend: `Ilange\Component\Ishop\Site\{Namespace}`
 
-#### Types
-- PHP: Use type hints where possible
-- JavaScript/TypeScript: Use TypeScript interfaces and types
+#### File Organization
+- Backend classes: `/backend/src/`
+- Frontend classes: `/frontend/src/`
+- View templates: `/backend/tmpl/` and `/frontend/tmpl/`
+- Helper classes: `/backend/src/Helper/` and `/frontend/src/Helper/`
 
 #### Naming Conventions
-- PHP: 
-  - Classes: PascalCase
-  - Methods/Functions: camelCase
-  - Variables: camelCase
-  - Constants: UPPER_CASE
-- JavaScript/TypeScript:
-  - Variables: camelCase
-  - Functions: camelCase
-  - Classes: PascalCase
-  - Constants: UPPER_CASE
+- Classes: PascalCase (e.g., `ProductModel`, `ProductHelper`)
+- Interfaces/Trait: PascalCase with suffixes (e.g., `BootableExtensionInterface`)
+- Methods/Functions: camelCase (e.g., `getProductRoute()`, `populateState()`)
+- Variables: camelCase (e.g., `$productId`, `$itemName`)
+- Constants: UPPER_CASE (e.g., `CONDITION_PUBLISHED`)
+- Field classes: PascalCase with suffix `Field` (e.g., `PrefixesField`)
 
-#### Error Handling
-- PHP: Use try/catch blocks for exceptions
-- JavaScript/TypeScript: Use async/await with try/catch
-- All errors should be properly logged and handled
+#### Imports
+```php
+use Joomla\CMS\Factory;
+use Joomla\Database\DatabaseInterface;
+use Joomla\Registry\Registry;
 
-#### Documentation
-- All classes, methods, and functions should include PHPDoc or JSDoc comments
-- Use clear, descriptive names for variables and functions
-- Add inline comments for complex logic
+defined('_JEXEC') or die;
+```
 
-## Cursor/Copilot Rules
+#### Formatting
+- Use 4 spaces for indentation
+- Class opening brace on new line
+- Function/method opening brace on same line as declaration
+- No trailing whitespace
+- Blank lines between methods and logical sections
 
-### Cursor Rules
-No specific Cursor rules found in .cursor/rules/ or .cursorrules
+### JavaScript/TypeScript (Frontend)
+When implementing frontend JS:
 
-### Copilot Instructions
-No specific Copilot instructions found in .github/copilot-instructions.md
+#### Module System
+- ES6 module syntax with explicit imports
+- Use Joomla! web asset manager for script loading
+
+#### Formatting
+- 2 spaces for indentation (consistent with Prettier)
+- Single quotes for strings
+- Semicolons required
+
+#### Naming Conventions
+- Variables/Functions: camelCase (e.g., `updateCart()`, `cartItems`)
+- Classes: PascalCase
+- Constants: UPPER_CASE
+
+## Error Handling
+
+### PHP
+```php
+try {
+    $data = $this->getItem($id);
+} catch (\Exception $e) {
+    if ($e->getCode() == 404) {
+        throw $e;
+    }
+    // Log error and handle appropriately
+}
+```
+
+- Use try/catch blocks for database operations
+- Check access permissions before data retrieval
+- Return meaningful error codes (404 for not found)
+
+### JavaScript
+```javascript
+try {
+    await fetch('/api/endpoint');
+} catch (error) {
+    console.error('Error:', error);
+}
+```
+
+## Documentation
+
+### PHPDoc Requirements
+All classes, methods, and functions require PHPDoc comments:
+
+```php
+/**
+ * Метод получения данных записи
+ *
+ * @param  int  $pk  Идентификатор записи
+ * @return object|bool Объект данных записи при успехе, иначе false
+ * @throws \Exception
+ * @since 1.0.0
+ */
+public function getItem($pk = null)
+```
+
+### Required PHPDoc Tags
+- `@package` - Component name
+- `@author` - Developer information
+- `@copyright` - Copyright notice
+- `@license` - License type
+- `@param` or `@return` - Parameter/return types
+- `@throws` - Exception types
+- `@since` - Version introduced
+
+## Database Conventions
+
+### Table Names
+- Use prefix: `#__ishop_`
+- Examples: `#__ishop_products`, `#__ishop_fields`
+
+### Query Building
+```php
+$db = Factory::getContainer()->get(DatabaseInterface::class);
+$query = $db->getQuery(true)
+    ->select($db->quoteName('a.id'))
+    ->from($db->quoteName('#__ishop_products', 'a'));
+```
+
+## Joomla! Specific Patterns
+
+### MVC Implementation
+- Models extend `ItemModel` or `ListModel`
+- Views extend `HtmlView`
+- Controllers follow standard Joomla! patterns
+
+### Form Handling
+- Use Joomla! form classes and field types
+- Follow core UI conventions with tabs
+- Always include CSRF token in forms
+
+### Layouts
+Use Joomla! LayoutHelper for reusable components:
+```php
+echo LayoutHelper::render('joomla.edit.global', $this);
+```
 
 ## Project Structure Notes
-This is a Joomla! extension project with:
-- Backend components in `/backend/src/`
-- Frontend components in `/frontend/src/`
-- Language files in `/language/` directories
-- Configuration files in root and component-specific directories
 
-All PHP code should follow Joomla! coding standards and PSR guidelines.
+This is a **Joomla! 6 component** (com_ishop) with:
+
+- **Backend**: `/backend/src/` (MVC), `/backend/tmpl/` (templates)
+- **Frontend**: `/frontend/src/` (MVC), `/frontend/tmpl/` (templates)
+- **Language files**: `/language/en-GB/`, `/language/ru-RU/`
+- **Database SQL**: `sql/install.mysql.utf8.sql`, `sql/uninstall.mysql.utf8.sql`
+- **Configuration**: `ishop.xml` (extension manifest)
+
+All PHP code must follow Joomla! coding standards with PSR-12 compliance.

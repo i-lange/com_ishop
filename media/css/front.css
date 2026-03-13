@@ -5,22 +5,4 @@
  * @copyright  (C) 2023 Pavel Lange <https://ilange.ru>
  * @license    GNU General Public License version 2 or later
  */
-.com_ishop {
-  position: relative;
-}
-
-.com_ishop_spinner {
-  display: none;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.com_ishop .loading .com_ishop_spinner {
-  display: block;
-}
-
-/*# sourceMappingURL=front.css.map */
+.com_ishop{position:relative}.com_ishop_spinner{background:#00000080;display:none;position:absolute;inset:0}.com_ishop .loading .com_ishop_spinner{display:block}

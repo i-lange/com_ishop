@@ -1,3 +1,6 @@
 /.git
+/.github
 /.idea
-/opencode.json
+/node_modules
+opencode.json
+pnpm-lock.yaml
