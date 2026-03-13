@@ -32,11 +32,13 @@
   "main": "",
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "archiver": "^7.0.1",
     "eslint": "^10.0.3",
     "prettier": "^3.8.1",
     "sass": "^1.98.0",
     "stylelint": "^17.4.0",
-    "vite": "^8.0.0"
+    "vite": "^8.0.0",
+    "vite-plugin-compression": "^0.5.1"
   },
   "scripts": {
     "dev": "vite",
@@ -49,7 +51,8 @@
     "lint": "eslint \"media/js/**/*.js\"",
     "lint:css": "stylelint \"media/scss/**/*.scss\"",
     "format": "prettier --write \"{media,backend,frontend}/**/*.{js,scss,css,php,xml,ini}\"",
-    "test": "echo \"No automated tests yet\" && exit 0"
+    "test": "echo \"No automated tests yet\" && exit 0",
+    "zip": "pnpm build && node pack.mjs"
   },
   "packageManager": "pnpm@10.3.0",
   "engines": {
