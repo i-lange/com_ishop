@@ -3,11 +3,11 @@
 ## Build/Lint/Test Commands
 
 ### General Commands
-- `npm run build` - Build the project (if applicable)
-- `npm run lint` - Run linting checks
-- `npm run test` - Run all tests
+- `pnpm build` - Build the project (if applicable)
+- `pnpm lint` - Run linting checks
+- `pnpm test` - Run all tests
 - `php vendor/bin/phpunit --filter testName path/to/test/file.php` - Run single PHP test
-- `npm test -- --testNamePattern="test name"` - Run single JS/TS test
+- `pnpm test -- --testNamePattern="test name"` - Run single JS/TS test
 
 ### Testing Notes
 - No PHPUnit configuration currently present in the project root
@@ -17,6 +17,9 @@
 ## Code Style Guidelines
 
 ### PHP (Joomla! Component)
+This project is an extension for Joomla 6. 
+Before generating/refactoring the code, be sure to read the local files in "C:\OSPanel\home\com_ishop\docs",
+and, if necessary, look for details in https://manual.joomla.org/docs/ for version 6 using webfetch/websearch
 All PHP code follows **Joomla! coding standards** and **PSR-12** guidelines:
 
 #### Namespace Convention
@@ -161,8 +164,8 @@ This is a **Joomla! 6 component** (com_ishop) with:
 
 - **Backend**: `/backend/src/` (MVC), `/backend/tmpl/` (templates)
 - **Frontend**: `/frontend/src/` (MVC), `/frontend/tmpl/` (templates)
-- **Language files**: `/language/en-GB/`, `/language/ru-RU/`
-- **Database SQL**: `sql/install.mysql.utf8.sql`, `sql/uninstall.mysql.utf8.sql`
+- **Language files**: `/backend/language/en-GB/`, `/backend/language/ru-RU/`, `/frontend/language/en-GB/`, `/frontend/language/ru-RU/`
+- **Database SQL**: `/backend/sql/install.mysql.utf8.sql`, `/backend/sql/uninstall.mysql.utf8.sql`
 - **Configuration**: `ishop.xml` (extension manifest)
 
 All PHP code must follow Joomla! coding standards with PSR-12 compliance.
