@@ -19,7 +19,7 @@ use Joomla\CMS\Component\Router\RouterView;
 use Joomla\CMS\Component\Router\RouterViewConfiguration;
 use Joomla\CMS\Component\Router\Rules\MenuRules;
 use Joomla\CMS\Component\Router\Rules\NomenuRules;
-//use Ilange\Component\Ishop\Site\Service\NomenuRules;
+//use Ilange\Component\Ishop\Site\Service\FilterRules;
 use Joomla\CMS\Component\Router\Rules\StandardRules;
 use Joomla\CMS\Menu\AbstractMenu;
 use Joomla\Database\DatabaseInterface;
@@ -131,6 +131,7 @@ class Router extends RouterView
         $this->attachRule(new MenuRules($this));
         $this->attachRule(new StandardRules($this));
         $this->attachRule(new NomenuRules($this));
+        $this->attachRule(new FilterRules($this));
     }
 
     /**
