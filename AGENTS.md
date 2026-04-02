@@ -18,8 +18,7 @@
 
 ### PHP (Joomla! Component)
 This project is an extension for Joomla 6. 
-Before generating/refactoring the code, be sure to read the local files in "C:\OSPanel\home\com_ishop\docs",
-and, if necessary, look for details in https://manual.joomla.org/docs/ for version 6 using webfetch/websearch
+Before generating/refactoring the code, be sure to read docs https://manual.joomla.org/docs/ for version 6 using webfetch/websearch
 All PHP code follows **Joomla! coding standards** and **PSR-12** guidelines:
 
 #### Namespace Convention
@@ -169,3 +168,11 @@ This is a **Joomla! 6 component** (com_ishop) with:
 - **Configuration**: `ishop.xml` (extension manifest)
 
 All PHP code must follow Joomla! coding standards with PSR-12 compliance.
+
+## Frontend Testing
+
+The frontend is accessible at https://magazin-gefest-new.local
+
+- The development server is always running and requires no additional setup
+- Use this URL for manual testing of interface changes
+- Responsive design should be tested across device size

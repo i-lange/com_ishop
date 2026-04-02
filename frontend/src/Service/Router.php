@@ -119,11 +119,13 @@ class Router extends RouterView
         $this->registerView(new RouterViewConfiguration('compare'));
         $this->registerView(new RouterViewConfiguration('wishlist'));
         $this->registerView(new RouterViewConfiguration('viewed'));
-        $this->registerView(new RouterViewConfiguration('warehousestock'));
 
-        // страница остатков на указанном складе
+        // список складов/магазинов/пвз
+        $warehouses = new RouterViewConfiguration('warehouses');
+        $this->registerView($warehouses);
+        // страница склада/магазина/пвз с остатками
         $warehousestock = new RouterViewConfiguration('warehousestock');
-        $warehousestock->setKey('id');
+        $warehousestock->setKey('id')->setParent($warehouses);
         $this->registerView($warehousestock);
 
         parent::__construct($app, $menu);
