@@ -666,6 +666,9 @@ class ProductsModel extends ListModel
         $compare = $this->getMVCFactory()->createModel('Compare', 'Site')->getCompareList();
 
         foreach ($items as $item) {
+            // Устанавливаем глобальную наценку (если применимо)
+            ProductHelper::calculateProductMarkup($item, $params);
+
             // Дополнительные атрибуты
             $item->attribs = (new Registry($item->attribs))->toArray();
             foreach ($item->attribs as $key => $element) {

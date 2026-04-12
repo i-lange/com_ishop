@@ -10,7 +10,7 @@
 namespace Ilange\Component\Ishop\Site\Helper;
 
 use Joomla\CMS\Component\ComponentHelper;
-use Joomla\CMS\HTML\HTMLHelper;
+use Joomla\CMS\Factory;
 use stdClass;
 
 defined('_JEXEC') or die;
@@ -21,6 +21,39 @@ defined('_JEXEC') or die;
  */
 class ProductHelper
 {
+    /**
+     * Расчет наценки по уровню доступа пользователя
+     *
+     * @param   object  $data    Объект товара
+     * @param   object  $params  Параметры
+     *
+     * @return  void Меняем исходный объект
+     * @throws \Exception
+     * @since 1.0.0
+     */
+    public static function calculateProductMarkup(object $data, object $params) {
+        // Уровни доступа текущего пользователя
+        $access_levels = Factory::getApplication()->getIdentity()->getAuthorisedViewLevels();
+        $markup_params = $params->get('markup_users_params', []);
+
+        if (empty($markup_params)) {
+            return;
+        }
+
+        $round = $params->get('roundPrice', 0);
+        foreach ($markup_params as $params) {
+            if ($params->access > 0 && in_array($params->access, $access_levels)) {
+                if ($data->price > 0) {
+                    // $params->percent_value всегда в процентах
+                    $data->price = round($data->price + ($data->price * $params->percent_value / 100), $round);
+                }
+
+                // Выходим после первой подходящей наценки
+                break;
+            }
+        }
+    }
+
     /**
      * Расчет оплаты товара частями по формуле аннуитетного платежа
      *

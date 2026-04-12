@@ -356,7 +356,7 @@ class ProductModel extends ItemModel
                 }
 
                 // Разрешения на доступ к чтению
-                if ($access = $this->getState('filter.access')) {
+                if ($this->getState('filter.access')) {
                     $data->params->set('access-view', true);
                 } else {
                     // Если фильтр доступа не установлен, макет берет на себя часть ответственности за отображение ограниченной информации
@@ -372,6 +372,9 @@ class ProductModel extends ItemModel
                         );
                     }
                 }
+
+                // Устанавливаем глобальную наценку (если применимо)
+                ProductHelper::calculateProductMarkup($data, $data->params);
 
                 // Устанавливаем нахождение товара
                 // в списках пользователя

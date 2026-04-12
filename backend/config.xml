@@ -485,6 +485,33 @@
                 <option value="3">COM_ISHOP_DISCOUNTS_MANUAL_MODE_3</option>
             </field>
         </fieldset>
+        <fieldset name="markup_users" label="COM_ISHOP_DISCOUNTS_MARKUP">
+            <field name="markup_users_note"
+                   type="note"
+                   description="COM_ISHOP_DISCOUNTS_MARKUP_NOTE"
+                   class="alert alert-warning"/>
+            <field name="markup_users_params"
+                   type="subform"
+                   label="COM_ISHOP_DISCOUNTS_MARKUP_PARAMS"
+                   multiple="true"
+                   layout="joomla.form.field.subform.repeatable-table">
+                <form>
+                    <field name="access"
+                           type="accesslevel"
+                           label="JFIELD_ACCESS_LABEL"
+                           filter="UINT"
+                           validate="options"
+                           required="true"/>
+                    <field name="percent_value"
+                           type="text"
+                           default="10"
+                           validate="number"
+                           filter="float"
+                           label="COM_ISHOP_DISCOUNTS_MARKUP_VALUE"
+                           required="true"/>
+                </form>
+            </field>
+        </fieldset>
     </fieldset>
 
 	<fieldset name="integration" label="JGLOBAL_INTEGRATION_LABEL">
