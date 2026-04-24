@@ -11,6 +11,7 @@ namespace Ilange\Component\Ishop\Site\View\Frontpage;
 
 defined('_JEXEC') or die;
 
+use Ilange\Component\Ishop\Site\Model\FrontpageModel;
 use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Language\Text;
@@ -29,7 +30,7 @@ class HtmlView extends BaseHtmlView
     protected $state;
 
     /**
-     * Список товаров корзины
+     * Список товаров
      * @var array
      * @since 1.0.0
      */
@@ -44,10 +45,14 @@ class HtmlView extends BaseHtmlView
      */
     public function display($tpl = null)
     {
-        $this->state        = $this->get('State');
+        /** @var FrontpageModel $model */
+        $model = $this->getModel();
+
+        $this->state        = $model->getState();
         $this->params       = $this->state->get('params');
-        $this->categories	= $this->get('Categories');
-        $this->text	        = $this->get('Text');
+        $this->categories	= $model->getCategories();
+        $this->products	    = $model->getProducts();
+        $this->text	        = $model->getText();
         $this->maxLevelcat =  $this->params->get('maxLevelcat', -1) < 0 ? PHP_INT_MAX :$this->params->get('maxLevelcat', PHP_INT_MAX);
 
         // Проверяем, есть ли ошибки
@@ -82,7 +87,6 @@ class HtmlView extends BaseHtmlView
 
         $this->menu_title = $menu_title;
 
-        // Page heading
         if ($this->params->def('show_page_heading')) {
             if (!$this->params->def('page_heading')) {
                 $this->menu_title = null;

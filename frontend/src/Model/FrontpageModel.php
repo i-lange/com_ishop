@@ -23,6 +23,13 @@ use RuntimeException;
 class FrontpageModel extends BaseDatabaseModel
 {
     /**
+     * Список категорий товаров
+     * @var array
+     * @since 1.0.0
+     */
+    protected $_categories = null;
+
+    /**
      * Список ТОП товаров
      * @var array
      * @since 1.0.0
@@ -30,11 +37,11 @@ class FrontpageModel extends BaseDatabaseModel
     public $_products = null;
 
     /**
-     * Список категорий товаров
-     * @var array
+     * Материал для описания
+     * @var object
      * @since 1.0.0
      */
-    protected $_categories = null;
+    public $_text = null;
 
     /**
      * Метод для автоматического заполнения модели
@@ -51,13 +58,13 @@ class FrontpageModel extends BaseDatabaseModel
         $params	= $app->getParams();
         $this->setState('params', $params);
 
-        $this->setState('show_products', $params->get('show_products', 0));
-        $this->setState('products_catid', $params->get('products_catid', []));
-        $this->setState('products_top', $params->get('products_top', 1));
-        $this->setState('products_count', $params->get('products_count', 15));
-        $this->setState('show_categories', $params->get('show_categories', 0));
-        $this->setState('show_text', $params->get('show_text', 0));
-        $this->setState('article_id', $params->get('article_id', 0));
+        $this->setState('frontpage_show_categories', $params->get('frontpage_show_categories', 0));
+        $this->setState('frontpage_show_products', $params->get('frontpage_show_products', 0));
+        $this->setState('frontpage_products_count', $params->get('frontpage_products_count', 15));
+        $this->setState('frontpage_products_catid', $params->get('frontpage_products_catid', []));
+        $this->setState('frontpage_products_mode', $params->get('frontpage_products_mode', 2));
+        $this->setState('frontpage_show_article', $params->get('frontpage_show_article', 0));
+        $this->setState('frontpage_article_id', $params->get('frontpage_article_id', 0));
     }
 
     /**
@@ -69,7 +76,7 @@ class FrontpageModel extends BaseDatabaseModel
      */
     public function getCategories()
     {
-        if (!$this->getState('show_categories')) {
+        if (!$this->getState('frontpage_show_categories')) {
             $this->_categories = false;
             return $this->_categories;
         }
@@ -104,14 +111,75 @@ class FrontpageModel extends BaseDatabaseModel
     /**
      * Метод получает текст статьи для главной страницы магазина
      *
+     * @return mixed Список товаров или false
+     * @throws \Exception
+     * @since 1.0.0
+     */
+    public function getProducts()
+    {
+        if (!$this->getState('frontpage_show_products')) {
+            $this->_products = false;
+            return $this->_products;
+        }
+
+        if ($this->_products === null) {
+            $model = $this
+                ->bootComponent('com_ishop')
+                ->getMVCFactory()
+                ->createModel('Products', 'Site', ['ignore_request' => true]);
+
+            // Количество товаров
+            $this->setState('frontpage_products_count', $this->getState('frontpage_products_count', 15));
+
+            // Фильтрация по категориям
+            $this->setState('catid', $this->getState('frontpage_products_catid', []));
+
+            // Подбор товаров по критериям
+            $mode = $this->getState('frontpage_products_mode', 2);
+            switch ($mode) {
+                // Самые продаваемые
+                case 1:
+                    $model->setState('filter.published', 1);
+                    break;
+                // Самые просматриваемые
+                case 2:
+                    $model->setState('list.ordering', 'a.hits');
+                    $model->setState('list.direction', 'DESC');
+                    break;
+                // Самые рейтинговые
+                case 3:
+                    $model->setState('list.ordering', 'a.rating');
+                    $model->setState('list.direction', 'DESC');
+                    break;
+                // Самые большие скидки
+                case 4:
+                    $model->setState('good_price', 1);
+                    break;
+            }
+
+            $this->_products = $model->getItems();
+
+            if ($this->_products === false) {
+                // Если не удалось получить список категорий из базы данных
+                throw new RuntimeException(implode("\n", $model->getError()), 500);
+            }
+
+        }
+
+        return $this->_products;
+    }
+
+    /**
+     * Метод получает текст статьи для главной страницы магазина
+     *
      * @return mixed Запись или false
      * @throws \Exception
      * @since 1.0.0
      */
     public function getText()
     {
-        if (!$this->getState('show_text') ||
-            !$this->getState('article_id')) {
+        if (!$this->getState('frontpage_show_article') ||
+            !$this->getState('frontpage_article_id')) {
             $this->_text = false;
             return $this->_text;
         }
@@ -123,13 +191,12 @@ class FrontpageModel extends BaseDatabaseModel
                 ->createModel('Article', 'Site', ['ignore_request' => true]);
             $model->setState('params', $this->getState('params'));
 
-            $this->_text = $model->getItem($this->getState('article_id'));
+            $this->_text = $model->getItem($this->getState('frontpage_article_id'));
 
             if ($this->_text === false) {
                 // Если не удалось получить список категорий из базы данных
                 throw new RuntimeException(implode("\n", $model->getError()), 500);
             }
-
         }
 
         return $this->_text;

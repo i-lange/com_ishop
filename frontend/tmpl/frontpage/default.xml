@@ -4,6 +4,130 @@
         <message><![CDATA[COM_ISHOP_MENU_FRONTPAGE_DESC]]></message>
     </layout>
     <fields name="params">
-
+        <fieldset name="display" label="COM_ISHOP_MENU_FIELDSET_DISPLAY" addfieldprefix="Joomla\Component\Content\Administrator\Field">
+            <field name="frontpage_show_slider"
+                   type="list"
+                   label="COM_ISHOP_MENU_SHOW_SLIDER"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="frontpage_slider_list"
+                   type="subform"
+                   label="COM_ISHOP_MENU_SLIDES"
+                   multiple="true"
+                   showon="frontpage_show_slider:1"
+                   layout="joomla.form.field.subform.repeatable-table">
+                <form>
+                    <field name="image"
+                           type="media"
+                           schemes="http,https,ftp,ftps,data,file"
+                           validate="url"
+                           relative="true"
+                           label="COM_ISHOP_MENU_SLIDE_IMAGE"/>
+                    <field name="title"
+                           type="text"
+                           label="COM_ISHOP_MENU_SLIDE_TITLE"/>
+                    <field name="badge"
+                           type="text"
+                           label="COM_ISHOP_MENU_SLIDE_BADGE"/>
+                    <field name="desc"
+                           type="text"
+                           label="COM_ISHOP_MENU_SLIDE_DESC"/>
+                    <field name="btn"
+                           type="text"
+                           label="COM_ISHOP_MENU_SLIDE_BTN"/>
+                    <field name="url"
+                           type="text"
+                           label="COM_ISHOP_MENU_SLIDE_URL"/>
+                </form>
+            </field>
+            <field name="frontpage_show_services"
+                   type="list"
+                   label="COM_ISHOP_MENU_SHOW_SERVICES"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="frontpage_services_list"
+                   type="subform"
+                   label="COM_ISHOP_MENU_SERVICES"
+                   multiple="true"
+                   showon="frontpage_show_services:1"
+                   layout="joomla.form.field.subform.repeatable-table">
+                <form>
+                    <field name="image"
+                           type="media"
+                           schemes="http,https,ftp,ftps,data,file"
+                           validate="url"
+                           relative="true"
+                           label="COM_ISHOP_MENU_SERVICE_IMAGE"/>
+                    <field name="icon"
+                           type="text"
+                           label="COM_ISHOP_MENU_SERVICE_ICON"/>
+                    <field name="title"
+                           type="text"
+                           label="COM_ISHOP_MENU_SERVICE_TITLE"/>
+                    <field name="desc"
+                           type="text"
+                           label="COM_ISHOP_MENU_SERVICE_DESCRIPTION"/>
+                    <field name="url"
+                           type="text"
+                           label="COM_ISHOP_MENU_SERVICE_URL"/>
+                </form>
+            </field>
+            <field name="frontpage_show_categories"
+                   type="list"
+                   label="COM_ISHOP_MENU_SHOW_CATEGORIES"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="frontpage_show_products"
+                   type="list"
+                   label="COM_ISHOP_MENU_SHOW_PRODUCTS"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="frontpage_products_count"
+                   type="number"
+                   min="3"
+                   max="100"
+                   validate="number"
+                   showon="frontpage_show_products:1"
+                   label="COM_ISHOP_MENU_PRODUCTS_COUNT"/>
+            <field name="frontpage_products_mode"
+                   type="list"
+                   default="18"
+                   showon="frontpage_show_products:1"
+                   label="COM_ISHOP_MENU_PRODUCTS_TOP">
+                <option value="1">COM_ISHOP_MENU_PRODUCTS_TOP_1</option>
+                <option value="2">COM_ISHOP_MENU_PRODUCTS_TOP_2</option>
+                <option value="3">COM_ISHOP_MENU_PRODUCTS_TOP_3</option>
+                <option value="4">COM_ISHOP_MENU_PRODUCTS_TOP_4</option>
+            </field>
+            <field name="frontpage_show_article"
+                   type="list"
+                   label="COM_ISHOP_MENU_SHOW_ARTICLE"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="frontpage_article_id"
+                   type="modal_article"
+                   label="COM_ISHOP_MENU_ARTICLE_ID"
+                   required="true"
+                   showon="frontpage_show_article:1"
+                   select="true"
+                   new="true"
+                   edit="true"
+                   clear="true"/>
+        </fieldset>
     </fields>
 </metadata>
