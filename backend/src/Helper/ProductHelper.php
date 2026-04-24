@@ -367,6 +367,24 @@ class ProductHelper
             return false;
         }
 
+        // Проверим, хранятся ли фото в дочерних каталогах по категориям
+        $products_images_to_cats = $params->get('products_images_to_cats', 0);
+        // Если фото разложены по категориям каталога, получим алиас категории товара
+        if ($products_images_to_cats) {
+            $category = Factory::getApplication()
+                ->bootComponent('com_categories')
+                ->getMVCFactory()
+                ->createTable('Category', 'Administrator');
+
+            // Загрузим данные категории
+            if (!$category->load(['id' => $product->catid])) {
+                return false;
+            }
+
+            // Добавим в путь к папке с фото алиас категории
+            $image_path .= '/' . $category->alias;
+        }
+
         $site_path = $image_path . '/' . $product->alias . '/';
         $dir_path = JPATH_SITE . '/' . $image_path . '/' . $product->alias;
 
