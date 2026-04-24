@@ -128,6 +128,6 @@ class HtmlView extends FormView
             $toolbar->save('prefix.save');
         }
 
-        $toolbar->cancel('prefix.cancel');
+        //$toolbar->cancel('prefix.cancel');
     }
 }
