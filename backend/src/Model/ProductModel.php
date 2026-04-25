@@ -11,6 +11,7 @@ namespace Ilange\Component\Ishop\Administrator\Model;
 
 defined('_JEXEC') or die;
 
+use Ilange\Component\Ishop\Administrator\Extension\IshopComponent;
 use Joomla\CMS\Application\ApplicationHelper;
 use Joomla\CMS\Event\AbstractEvent;
 use Joomla\CMS\Event\Model\AfterSaveEvent;
@@ -754,111 +755,90 @@ class ProductModel extends AdminModel
     /**
      * Возвращает список характеристик товара
      *
-     * @return  array  Массив характеристик
+     * @param int $catid ID категории
+     *
+     * @return array
      * @throws \Exception
-     * @since   1.0.0
+     * @since 1.0.0
      */
     private function getFieldList($catid)
     {
-        // Результирующий массив характеристик, разбитый по группам
         $result = [];
 
-        // Если не определен идентификатор товара
-        // возвращаем пустой массив
         $pk = (int) $this->getState('product.id');
-        if (!$pk) {
+
+        if (!$pk || !$catid) {
             return $result;
         }
 
-        $db     = $this->getDatabase();
-        $query  = $db->getQuery(true);
+        $db    = $this->getDatabase();
         $user  = $this->getCurrentUser();
+        $query = $db->getQuery(true);
 
-        // Получаем список характеристик, разбитый по группам из
-        // настроек категории
+        // Получаем конфигурацию групп/полей из параметров категории
         $category = Factory::getApplication()
             ->bootComponent('com_categories')
             ->getMVCFactory()
             ->createTable('Category', 'Administrator');
-        $category->load(['id' => $catid]);
-        $category->params = new Registry($category->params);
-        $fields = $category->params->get('fields_groups', []);
-        unset($category);
 
-        // Если не указаны характеристики по группам в настройках
-        // категории - возвращаем пустой массив
+        $category->load(['id' => (int) $catid]);
+        $params = new Registry($category->params);
+        $fields = $params->get('fields_groups', []);
+
         if (empty($fields)) {
             return $result;
         }
 
-        $list = $group_list = [];
-        // Перебираем все группы
-        // и формируем список идентификаторов характеристик
+        $fieldIds = [];
+        $groupIds = [];
+
         foreach ($fields as $property) {
-            $group_list[] = (int) $property->group;
-            // Проверяем, есть ли свойство field и является ли оно массивом
-            if (isset($property->field) && is_array($property->field)) {
-                // Объединяем текущий результат с массивом field
-                $list = array_merge($list, $property->field);
+            if (!isset($property->group)) {
+                continue;
+            }
+
+            $groupIds[] = (int) $property->group;
+
+            if (!empty($property->field) && is_array($property->field)) {
+                foreach ($property->field as $fieldId) {
+                    $fieldIds[] = (int) $fieldId;
+                }
             }
         }
-        $list = array_unique($list);
 
-        if (empty($list)) {
+        $fieldIds = array_values(array_unique(array_filter($fieldIds)));
+        $groupIds = array_values(array_unique(array_filter($groupIds)));
+
+        if (empty($fieldIds) || empty($groupIds)) {
             return $result;
         }
 
-        // Получим характеристики по группам, заданные для категории товара
-        $query
+        // 1. Получаем все поля, доступные категории, БЕЗ зависимости от fields_map
+        $state = IshopComponent::CONDITION_PUBLISHED;
+        $query->clear()
             ->select([
                 $db->quoteName('a.id'),
                 $db->quoteName('a.title'),
                 $db->quoteName('a.alias'),
                 $db->quoteName('a.type'),
                 $db->quoteName('a.unit'),
-                ' CASE WHEN ' . $db->qn('a.type') .
-                ' = 1 THEN GROUP_CONCAT(DISTINCT ' . $db->qn('values.value') .
-                ' ORDER BY ' . $db->qn('values.ordering') . ' SEPARATOR ' . $db->q('||') . ')' .
-                ' ELSE ' . $db->q('') .
-                ' END AS ' . $db->qn('values'),
-                ' CASE WHEN ' . $db->qn('a.type') .
-                ' = 1 THEN GROUP_CONCAT(DISTINCT ' . $db->qn('values.id') .
-                ' ORDER BY ' . $db->qn('values.ordering') . ' SEPARATOR ' . $db->q('||') . ')' .
-                ' ELSE ' . $db->q('') .
-                ' END AS ' . $db->qn('values_id'),
             ])
             ->from($db->quoteName('#__ishop_fields', 'a'))
-            ->join('LEFT',
-                $db->quoteName('#__languages', 'languages'),
-                $db->quoteName('languages.lang_code') . ' = ' . $db->quoteName('a.language'))
-            ->join('LEFT',
-                $db->quoteName('#__viewlevels', 'levels'),
-                $db->quoteName('levels.id') . ' = ' . $db->quoteName('a.access'))
-            ->join('INNER',
-                $db->quoteName('#__ishop_fields_map', 'fields_map'),
-                $db->quoteName('fields_map.field_id') . ' = ' . $db->quoteName('a.id'))
-            ->join('LEFT',
-                $db->quoteName('#__ishop_values', 'values'),
-                '(' .$db->quoteName('a.type') . ' = 1 AND ' .
-                $db->quoteName('values.id') . ' = ' . $db->quoteName('fields_map.value') . ')');
+            ->whereIn($db->quoteName('a.id'), $fieldIds)
+            ->where($db->quoteName('a.state') . ' = :state')
+            ->bind(':state', $state, ParameterType::INTEGER)
+            ->order($db->quoteName('a.ordering') . ' ASC');
 
-        // Фильтр по списку характеристик для категории
-        $query->whereIn($db->quoteName('a.id'), $list);
-        unset($list);
-
-        // Фильтр по уровню доступа
         if (!$user->authorise('core.admin')) {
-            $groups = $user->getAuthorisedViewLevels();
-            $query->whereIn($db->quoteName('a.access'), $groups);
+            $levels = $user->getAuthorisedViewLevels();
+
+            if (empty($levels)) {
+                return $result;
+            }
+
+            $query->whereIn($db->quoteName('a.access'), $levels);
         }
 
-        // Фильтрация по состоянию публикации
-        $published = 1;
-        $query
-            ->where($db->quoteName('a.state') . ' = :state')
-            ->bind(':state', $published, ParameterType::INTEGER);
-
-        // Фильтр по языку
         if (Multilanguage::isEnabled()) {
             $query->whereIn(
                 $db->quoteName('a.language'),
@@ -867,88 +847,172 @@ class ProductModel extends AdminModel
             );
         }
 
-        $query->order('a.ordering ASC');
-        $query->group([
-            $db->quoteName('a.id'),
-            $db->quoteName('a.title'),
-            $db->quoteName('a.type'),
-            $db->quoteName('a.unit'),
-        ]);
         $db->setQuery($query);
         $all = $db->loadAssocList();
-        if (!$all) {
+
+        if (empty($all)) {
             return $result;
         }
+
         $all = array_combine(array_column($all, 'id'), $all);
 
-        // Теперь нужно получить ранее установленные
-        // значения характеристик текущего товара
-        $query
-            ->clear('select')
+        // Подготовим поля по умолчанию
+        foreach ($all as &$field) {
+            $field['values']    = '';
+            $field['values_id'] = '';
+            $field['active']    = false;
+            $field['hint']      = '';
+        }
+        unset($field);
+
+        // 2. Загружаем ПОЛНЫЙ список вариантов для list-полей из ishop_values
+        $listFieldIds = [];
+
+        foreach ($all as $field) {
+            if ((int) $field['type'] === 1) {
+                $listFieldIds[] = (int) $field['id'];
+            }
+        }
+
+        if (!empty($listFieldIds)) {
+            $query->clear()
+                ->select([
+                    $db->quoteName('v.id'),
+                    $db->quoteName('v.field_id'),
+                    $db->quoteName('v.value'),
+                    $db->quoteName('v.ordering'),
+                ])
+                ->from($db->quoteName('#__ishop_values', 'v'))
+                ->whereIn($db->quoteName('v.field_id'), $listFieldIds)
+                ->order($db->quoteName('v.field_id') . ' ASC, ' . $db->quoteName('v.ordering') . ' ASC');
+
+            if (Multilanguage::isEnabled()) {
+                $query->whereIn(
+                    $db->quoteName('v.language'),
+                    [Factory::getApplication()->getLanguage()->getTag(), '*'],
+                    ParameterType::STRING
+                );
+            }
+
+            $db->setQuery($query);
+            $values = $db->loadAssocList();
+
+            if (!empty($values)) {
+                $groupedValues = [];
+
+                foreach ($values as $value) {
+                    $fieldId = (int) $value['field_id'];
+
+                    if (!isset($groupedValues[$fieldId])) {
+                        $groupedValues[$fieldId] = [
+                            'values'    => [],
+                            'values_id' => [],
+                        ];
+                    }
+
+                    $groupedValues[$fieldId]['values'][]    = $value['value'];
+                    $groupedValues[$fieldId]['values_id'][] = $value['id'];
+                }
+
+                foreach ($groupedValues as $fieldId => $data) {
+                    if (!isset($all[$fieldId])) {
+                        continue;
+                    }
+
+                    $all[$fieldId]['values']    = implode('||', $data['values']);
+                    $all[$fieldId]['values_id'] = implode('||', $data['values_id']);
+                }
+            }
+        }
+
+        // 3. Загружаем уже сохранённые значения текущего товара
+        $query->clear()
             ->select([
-                $db->quoteName('a.id'),
-                $db->quoteName('a.title'),
-                $db->quoteName('a.alias'),
-                $db->quoteName('a.type'),
-                $db->quoteName('a.unit'),
-                ' CASE WHEN ' . $db->qn('a.type') .
-                ' = 1 THEN GROUP_CONCAT(DISTINCT ' . $db->qn('values.value') .
-                ' ORDER BY ' . $db->qn('values.ordering') . ' SEPARATOR ' . $db->q('||') . ')' .
-                ' ELSE ' . $db->qn('fields_map.value') .
-                ' END AS ' . $db->qn('values'),
-                ' CASE WHEN ' . $db->qn('a.type') .
-                ' = 1 THEN GROUP_CONCAT(DISTINCT ' . $db->qn('values.id') .
-                ' ORDER BY ' . $db->qn('values.ordering') . ' SEPARATOR ' . $db->q('||') . ')' .
-                ' ELSE ' . $db->q('') .
-                ' END AS ' . $db->qn('values_id'),
-                $db->quoteName('fields_map.hint'),
+                $db->quoteName('field_id'),
+                $db->quoteName('value'),
+                $db->quoteName('hint'),
             ])
-            ->where($db->quoteName('fields_map.product_id') . ' = :id')
-            ->bind(':id', $pk, ParameterType::INTEGER);
+            ->from($db->quoteName('#__ishop_fields_map'))
+            ->where($db->quoteName('product_id') . ' = :product_id')
+            ->bind(':product_id', $pk, ParameterType::INTEGER)
+            ->whereIn($db->quoteName('field_id'), array_keys($all));
+
         $db->setQuery($query);
         $active = $db->loadAssocList();
 
-        // Добавляем в список характеристик установленные значения
-        foreach ($active as $field) {
-            if (isset($field['values_id']) && $field['values_id'] !== '') {
-                $all[$field['id']]['active'] = (int) $field['values_id'];
-            } elseif (isset($field['values']) && $field['values'] !== '') {
-                $all[$field['id']]['active'] = $field['values'];
-            } else {
-                $all[$field['id']]['active'] = false;
+        if (!empty($active)) {
+            foreach ($active as $row) {
+                $fieldId = (int) $row['field_id'];
+
+                if (!isset($all[$fieldId])) {
+                    continue;
+                }
+
+                if ((int) $all[$fieldId]['type'] === 1) {
+                    $all[$fieldId]['active'] = (int) $row['value'];
+                } elseif ($row['value'] !== '' && $row['value'] !== null) {
+                    $all[$fieldId]['active'] = $row['value'];
+                } else {
+                    $all[$fieldId]['active'] = false;
+                }
+
+                $all[$fieldId]['hint'] = $row['hint'] ?? '';
             }
-            $all[$field['id']]['hint'] = $field['hint'];
         }
 
-        $query
-            ->clear()
+        // 4. Загружаем группы
+        $query->clear()
             ->select([
                 $db->quoteName('id'),
                 $db->quoteName('title'),
                 $db->quoteName('alias'),
             ])
             ->from($db->quoteName('#__ishop_groups'))
-            ->whereIn($db->quoteName('id'), $group_list);
+            ->whereIn($db->quoteName('id'), $groupIds)
+            ->order($db->quoteName('ordering') . ' ASC');
+
+        if (Multilanguage::isEnabled()) {
+            $query->whereIn(
+                $db->quoteName('language'),
+                [Factory::getApplication()->getLanguage()->getTag(), '*'],
+                ParameterType::STRING
+            );
+        }
+
         $db->setQuery($query);
         $groups = $db->loadAssocList();
+
+        if (empty($groups)) {
+            return $result;
+        }
+
         $groups = array_combine(array_column($groups, 'id'), $groups);
 
-
-        // Формируем конечный список характеристик разбитых по группам
+        // 5. Собираем финальную структуру по порядку из category params
         foreach ($fields as $group) {
-            $result[$group->group] = $groups[$group->group];
-            $result[$group->group]['fields'] = [];
+            $groupId = isset($group->group) ? (int) $group->group : 0;
 
-            if (!isset($group->field) && !is_array($group->field)) {
+            if (!$groupId || !isset($groups[$groupId])) {
                 continue;
             }
 
-            foreach ($group->field as $field) {
-                if (empty($all[$field])) {
+            if (!isset($result[$groupId])) {
+                $result[$groupId] = $groups[$groupId];
+                $result[$groupId]['fields'] = [];
+            }
+
+            if (empty($group->field) || !is_array($group->field)) {
+                continue;
+            }
+
+            foreach ($group->field as $fieldId) {
+                $fieldId = (int) $fieldId;
+
+                if (!isset($all[$fieldId])) {
                     continue;
                 }
 
-                $result[$group->group]['fields'][$field] = $all[$field];
+                $result[$groupId]['fields'][$fieldId] = $all[$fieldId];
             }
         }
 
