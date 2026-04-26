@@ -129,10 +129,10 @@ class FrontpageModel extends BaseDatabaseModel
                 ->createModel('Products', 'Site', ['ignore_request' => true]);
 
             // Количество товаров
-            $this->setState('frontpage_products_count', $this->getState('frontpage_products_count', 15));
+            $model->setState('list.limit', $this->getState('frontpage_products_count', 15));
 
             // Фильтрация по категориям
-            $this->setState('catid', $this->getState('frontpage_products_catid', []));
+            $model->setState('catid', $this->getState('frontpage_products_catid', []));
 
             // Подбор товаров по критериям
             $mode = $this->getState('frontpage_products_mode', 2);
