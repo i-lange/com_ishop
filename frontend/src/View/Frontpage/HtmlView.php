@@ -12,6 +12,7 @@ namespace Ilange\Component\Ishop\Site\View\Frontpage;
 defined('_JEXEC') or die;
 
 use Ilange\Component\Ishop\Site\Model\FrontpageModel;
+use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Language\Text;
@@ -50,6 +51,8 @@ class HtmlView extends BaseHtmlView
 
         $this->state        = $model->getState();
         $this->params       = $this->state->get('params');
+        // Объединим с параметрами компонента
+        $this->params->merge(ComponentHelper::getParams('com_ishop'));
         $this->categories	= $model->getCategories();
         $this->products	    = $model->getProducts();
         $this->text	        = $model->getText();
