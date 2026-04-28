@@ -642,9 +642,9 @@ class ProductsModel extends ListModel
         if ($params->get('payments_use', 0) && $params->get('parts_use', 0)) {
             $parts = $this->getMVCFactory()->createModel('Parts', 'Site')->getItems();
 
-            foreach ($parts as $part) {
-                if (!$part->attribs['cats_label_show']) {
-                    unset($part);
+            foreach ($parts as $i => $part) {
+                if ((int) $part->attribs['cats_label_show'] == 0) {
+                    unset($parts[$i]);
                 }
             }
         }
