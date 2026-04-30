@@ -734,7 +734,22 @@ class CategoryModel extends ListModel
         if ($this->_all_products_id === null && $category = $this->getCategory()) {
             $db = $this->getDatabase();
             $query = $db->getQuery(true);
+            $tableName = '#__ishop_filter_cat_' . $category->id;
+
+            // Проверим существование таблицы для фильтрации товаров
             $query
+                ->select(
+                    'EXISTS (SELECT 1 FROM ' . $db->qn('information_schema.tables') .
+                    ' WHERE ' . $db->qn('table_schema') . ' = DATABASE() AND ' .
+                    $db->qn('table_name') . ' = ' . $db->q($tableName) . ') AS table_exists');
+            $db->setQuery($query);
+            if (!$db->loadResult()) {
+                $this->_all_products_id = false;
+                return $this->_all_products_id;
+            }
+
+            $query
+                ->clear()
                 ->select($db->quoteName('a.product_id'))
                 ->from($db->quoteName('#__ishop_filter_cat_' . $category->id, 'a'));
             $db->setQuery($query);
@@ -809,6 +824,9 @@ class CategoryModel extends ListModel
 
         $params = new Registry($this->getCategory()->params);
         $fields = $params->get('filter_fields', []);
+        if (empty($fields)) {
+            return $fields;
+        }
 
         $products_id = $this->getItemsId();
 
