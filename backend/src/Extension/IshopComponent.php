@@ -26,6 +26,7 @@ use Joomla\CMS\Form\Form;
 use Joomla\CMS\Helper\ContentHelper as LibraryContentHelper;
 use Joomla\CMS\HTML\HTMLRegistryAwareTrait;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Log\Log;
 use Joomla\CMS\Schemaorg\SchemaorgServiceInterface;
 use Joomla\CMS\Schemaorg\SchemaorgServiceTrait;
 use Joomla\CMS\Tag\TagServiceInterface;
@@ -115,6 +116,12 @@ class IshopComponent extends MVCComponent implements
     public function boot(ContainerInterface $container)
     {
         $this->getRegistry()->register('ishopadministrator', new AdministratorService());
+
+        Log::addLogger(
+            ['text_file' => 'ishop.log.php'],
+            Log::ALL,
+            ['ishop']
+        );
     }
 
     /**

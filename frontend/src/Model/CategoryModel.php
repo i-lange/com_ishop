@@ -734,7 +734,7 @@ class CategoryModel extends ListModel
         if ($this->_all_products_id === null && $category = $this->getCategory()) {
             $db = $this->getDatabase();
             $query = $db->getQuery(true);
-            $tableName = '#__ishop_filter_cat_' . $category->id;
+            $tableName = $db->getPrefix() . 'ishop_filter_cat_' . $category->id;
 
             // Проверим существование таблицы для фильтрации товаров
             $query
