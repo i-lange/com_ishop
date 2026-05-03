@@ -933,8 +933,8 @@ class CategoryModel extends ListModel
         $db->setQuery($query);
 
         try {
-            $ishop_fields = (array) $db->loadObjectList();
-            $ishop_fields = array_combine(array_column($ishop_fields, 'id'), $ishop_fields);
+            $ishop_fields = (array) $db->loadObjectList('id');
+            //$ishop_fields = array_combine(array_column($ishop_fields, 'id'), $ishop_fields);
         } catch (RuntimeException $e) {
             Log::add('Не удалось получить список характеристик для фильтра: ' . $query->__toString(), Log::ERROR, 'ishop');
             $ishop_fields = [];
