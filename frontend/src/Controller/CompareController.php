@@ -120,7 +120,7 @@ class CompareController extends BaseController
 
         try {
             $result = $this
-                ->getModel('Cart', 'Compare')
+                ->getModel('Compare', 'Compare')
                 ->remove();
 
             if ($result === false) {
