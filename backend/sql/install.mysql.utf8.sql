@@ -569,6 +569,7 @@ CREATE TABLE IF NOT EXISTS `#__ishop_warehouses`
     `introtext`        mediumtext                                               NOT NULL                    COMMENT 'Краткое описание',
     `fulltext`         mediumtext                                               NOT NULL                    COMMENT 'Полное описание',
     `address`          varchar(255)                                             NOT NULL DEFAULT ''         COMMENT 'Адрес',
+    `phone`            varchar(25)                                              NOT NULL DEFAULT ''         COMMENT 'Телефон',
     `latitude`         varchar(25)                                              NOT NULL DEFAULT ''         COMMENT 'Широта',
     `longitude`        varchar(25)                                              NOT NULL DEFAULT ''         COMMENT 'Долгота',
     `images`           text                                                     NOT NULL                    COMMENT 'Изображения',

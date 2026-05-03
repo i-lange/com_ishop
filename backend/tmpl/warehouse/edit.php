@@ -76,6 +76,7 @@ $tmpl    = $tmpl ? '&tmpl=' . $tmpl : '';
                     <div>
                         <?php echo $this->form->renderField('point'); ?>
                         <?php echo $this->form->renderField('address'); ?>
+                        <?php echo $this->form->renderField('phone'); ?>
                         <?php echo $this->form->renderField('latitude'); ?>
                         <?php echo $this->form->renderField('longitude'); ?>
                         <?php echo $this->form->renderField('icon'); ?>

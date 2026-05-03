@@ -58,6 +58,11 @@
                type="text"
                label="COM_ISHOP_FIELD_ADDRESS"
                maxlength="255"/>
+        <field name="phone"
+               type="text"
+               label="COM_ISHOP_FIELD_PHONE"
+               maxlength="255"
+               filter="string"/>
         <field name="latitude"
                type="text"
                label="COM_ISHOP_FIELD_LATITUDE"
