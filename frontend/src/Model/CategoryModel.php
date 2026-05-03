@@ -1020,7 +1020,7 @@ class CategoryModel extends ListModel
                 ->whereIn($db->quoteName('a.id'), $products_id)
                 ->order('manufacturer.ordering ASC');
             $db->setQuery($query);
-            $this->_manufacturers = $db->loadAssocList();
+            $this->_manufacturers = $db->loadObjectList('id');
 
             if ($this->_manufacturers === false) {
                 // Если не удалось получить цены товаров из базы данных
