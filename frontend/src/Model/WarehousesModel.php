@@ -95,21 +95,20 @@ class WarehousesModel extends ListModel
                         $db->quoteName('a.introtext'),
                         $db->quoteName('a.fulltext'),
                         $db->quoteName('a.address'),
+                        $db->quoteName('a.phone'),
                         $db->quoteName('a.latitude'),
                         $db->quoteName('a.longitude'),
                         $db->quoteName('a.images'),
                         $db->quoteName('a.icon'),
                         $db->quoteName('a.emoji'),
                         $db->quoteName('a.ordering'),
-                        $db->quoteName('a.bitrix24_id'),
-                        $db->quoteName('a.system1c_guid'),
                     ]
                 )
             )
             ->from($db->quoteName('#__ishop_warehouses', 'a'));
 
         // Фильтрация, по состоянию публикации
-        $published = $this->getState('filter.published');
+        $published = $this->getState('filter.published', 1);
         if (is_numeric($published)) {
             $published = (int) $published;
             $query
@@ -119,13 +118,19 @@ class WarehousesModel extends ListModel
             $query->whereIn($db->quoteName('a.state'), $query->bindArray($published));
         }
 
+        // Фильтрация, по списку идентификаторов
+        $id_list = $this->getState('filter.warehouses', []);
+        if (!empty($id_list)) {
+            $query->whereIn($db->quoteName('a.id'), $id_list);
+        }
+
         // Фильтрация, языку контента
         if ($this->getState('filter.language')) {
             $query->whereIn($db->quoteName('a.language'), [Factory::getApplication()->getLanguage()->getTag(), '*'], ParameterType::STRING);
         }
 
         // Фильтрация по метке ПВЗ
-        $point = $this->getState('filter.point');
+        $point = $this->getState('filter.point', 1);
         if (is_numeric($point)) {
             $point = (int) $point;
             $query

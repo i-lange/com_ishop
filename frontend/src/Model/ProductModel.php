@@ -389,6 +389,9 @@ class ProductModel extends ItemModel
                 // Устанавливаем параметры оплаты частями
                 $this->setPaymentsPart($data);
 
+                // Список магазинов/складов/ПВЗ, где в наличии данный товар
+                $this->setWarehousesStock($data);
+
                 // По-умолчанию размер скидки в процентах равен 0
                 $data->discount_size = PriceHelper::getDiscountSize($data, 2);
 
@@ -761,5 +764,37 @@ class ProductModel extends ItemModel
                 $data->parts[] = $current;
             }
         }
+    }
+
+    /**
+     * Устанавливает список складов/магазинов/ПВЗ
+     * в который данный товар в наличии
+     *
+     * @param   object  $data  Данные товара
+     *
+     * @return void
+     * @throws \Exception
+     * @since 1.0.0
+     */
+    private function setWarehousesStock(object $data)
+    {
+        $db    = $this->getDatabase();
+        $query = $db->getQuery(true);
+
+        $query
+            ->select($db->quoteName('a.warehouse_id'))
+            ->from($db->quoteName('#__ishop_warehouses_stock', 'a'))
+            ->where($db->quoteName('a.product_id') . ' = ' . $data->id);
+
+        $db->setQuery($query);
+        $ids = $db->loadColumn();
+
+        $model = $this
+            ->bootComponent('com_ishop')
+            ->getMVCFactory()
+            ->createModel('Warehouses', 'Site', ['ignore_request' => true]);
+        $model->setState('filter.warehouses', $ids);
+
+        $data->warehouses = $model->getItems();
     }
 }
