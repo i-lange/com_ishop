@@ -123,6 +123,12 @@ class Router extends RouterView
         // список складов/магазинов/пвз
         $warehouses = new RouterViewConfiguration('warehouses');
         $this->registerView($warehouses);
+
+        // страница склада/магазина/пвз с остатками
+        $warehouse = new RouterViewConfiguration('warehouse');
+        $warehouse->setKey('id')->setParent($warehouses);
+        $this->registerView($warehouse);
+
         // страница склада/магазина/пвз с остатками
         $warehousestock = new RouterViewConfiguration('warehousestock');
         $warehousestock->setKey('id')->setParent($warehouses);
@@ -243,6 +249,38 @@ class Router extends RouterView
         return [(int)$id => $id];
     }
 
+    /**
+     * Метод получения сегмента (сегментов) для склада
+     *
+     * @param   string  $id     ID товара для получения сегментов
+     * @param   array   $query  Запрос, который собирается в данный момент
+     *
+     * @return array Массив сегментов склада
+     * @since 1.0.0
+     */
+    public function getWarehouseSegment(string $id, array $query)
+    {
+        if (!strpos($id, ':')) {
+            $id = (int) $id;
+            $dbquery = $this->db->getQuery(true);
+            $dbquery->select($this->db->quoteName('alias'))
+                ->from($this->db->quoteName('#__ishop_warehouses'))
+                ->where($this->db->quoteName('id') . ' = :id')
+                ->bind(':id', $id, ParameterType::INTEGER);
+            $this->db->setQuery($dbquery);
+
+            $id .= ':' . $this->db->loadResult();
+        }
+
+        if ($this->noIDs) {
+            list($void, $segment) = explode(':', $id, 2);
+
+            return [$void => $segment];
+        }
+
+        return [(int)$id => $id];
+    }
+
 
     /**
      * Метод получения идентификатора для списка категорий
@@ -330,6 +368,32 @@ class Router extends RouterView
             $db_query
                 ->select($this->db->quoteName('id'))
                 ->from($this->db->quoteName('#__ishop_manufacturers'))
+                ->where($this->db->quoteName('alias') . ' = :segment')
+                ->bind(':segment', $segment);
+            $this->db->setQuery($db_query);
+
+            return (int) $this->db->loadResult();
+        }
+
+        return (int) $segment;
+    }
+
+    /**
+     * Метод получения идентификатора для товара
+     *
+     * @param   string  $segment  Сегмент товара для получения идентификатора
+     * @param   array   $query    Запрос, который разбирается в данный момент
+     *
+     * @return int Идентификатор найденного товара или нуль
+     * @since 1.0.0
+     */
+    public function getWarehouseId(string $segment, array $query)
+    {
+        if ($this->noIDs) {
+            $db_query = $this->db->getQuery(true);
+            $db_query
+                ->select($this->db->quoteName('id'))
+                ->from($this->db->quoteName('#__ishop_warehouses'))
                 ->where($this->db->quoteName('alias') . ' = :segment')
                 ->bind(':segment', $segment);
             $this->db->setQuery($db_query);
