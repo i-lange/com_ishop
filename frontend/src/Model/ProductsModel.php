@@ -333,8 +333,8 @@ class ProductsModel extends ListModel
         $condition = $this->getState('filter.published');
         if (is_numeric($condition) && $condition == 2) {
             /**
-             * Если категория в архиве, то товар должен быть опубликован или заархивирован
-             * Если категория опубликована, то товар должен быть заархивирован
+             * Если категория в архиве, то товар должен быть опубликован или архивирован
+             * Если категория опубликована, то товар должен быть архивирован
              */
             $query
                 ->where('((' . $db->quoteName('category.published') . ' = 2 AND ' . $db->quoteName('a.state') . ' > :conditionUnpublished)'
@@ -356,6 +356,11 @@ class ProductsModel extends ListModel
             );
         }
 
+        // Фильтрация, по наличию товара
+        $stock = $this->getState('filter.stock', 0);
+        if (is_numeric($stock) && $stock > 0) {
+            $query->where('(' . $db->quoteName('a.stock') . ' = -1 OR ' . $db->quoteName('a.stock') . ' >= ' . $stock . ')');
+        }
 
         // Фильтрация, по производителям
         $manufacturers  = $this->getState('filter.manufacturers');
@@ -635,6 +640,11 @@ class ProductsModel extends ListModel
     public function getItems()
     {
         $items = parent::getItems();
+
+        if (empty($items)) {
+            return $items;
+        }
+
         $params = ComponentHelper::getParams('com_ishop');
 
         // Если нужно показывать расчет оплаты частями

@@ -392,6 +392,9 @@ class ProductModel extends ItemModel
                 // Список магазинов/складов/ПВЗ, где в наличии данный товар
                 $this->setWarehousesStock($data);
 
+                // Устанавливаем списки связанных товаров
+                $this->setRelatedItems($data);
+
                 // По-умолчанию размер скидки в процентах равен 0
                 $data->discount_size = PriceHelper::getDiscountSize($data, 2);
 
@@ -482,7 +485,7 @@ class ProductModel extends ItemModel
 
         // Если не установлены параметры категории,
         // просто вернем все характеристики в основной группе
-        if (!$params) {
+        if (empty($params->fields_groups)) {
             $params = ComponentHelper::getParams('com_ishop');
             $group_default_id = (int) $params->get('group_default', 0);
             $query
@@ -796,5 +799,53 @@ class ProductModel extends ItemModel
         $model->setState('filter.warehouses', $ids);
 
         $data->warehouses = $model->getItems();
+    }
+
+    /**
+     * Устанавливает списки связанных товаров
+     *
+     * @param   object  $data  Данные товара
+     *
+     * @return void
+     * @throws \Exception
+     * @since 1.0.0
+     */
+    private function setRelatedItems(object $data)
+    {
+        // Сопутствующие товары
+        if (!empty($data->related)) {
+            $ids = explode(',', $data->related);
+            $model = $this
+                ->bootComponent('com_ishop')
+                ->getMVCFactory()
+                ->createModel('Products', 'Site', ['ignore_request' => true]);
+            $model->setState('filter.products', $ids);
+            $model->setState('filter.stock', 1);
+            $data->related = $model->getItems();
+        }
+
+        // Похожие товары
+        if (!empty($data->similar)) {
+            $ids = explode(',', $data->similar);
+            $model = $this
+                ->bootComponent('com_ishop')
+                ->getMVCFactory()
+                ->createModel('Products', 'Site', ['ignore_request' => true]);
+            $model->setState('filter.products', $ids);
+            $model->setState('filter.stock', 1);
+            $data->similar = $model->getItems();
+        }
+
+        // Товары-офферы (паровозик)
+        if (!empty($data->offers)) {
+            $ids = explode(',', $data->offers);
+            $model = $this
+                ->bootComponent('com_ishop')
+                ->getMVCFactory()
+                ->createModel('Products', 'Site', ['ignore_request' => true]);
+            $model->setState('filter.products', $ids);
+            $model->setState('filter.stock', 1);
+            $data->offers = $model->getItems();
+        }
     }
 }
