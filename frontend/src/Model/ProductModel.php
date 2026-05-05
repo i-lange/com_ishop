@@ -289,6 +289,9 @@ class ProductModel extends ItemModel
                     // Также добавим сюда данные по комплектации, стране и гарантии на товар
                     $defaults = ['equipment', 'country', 'warranty'];
                     foreach ($defaults as $def) {
+                        if (empty($data->{$def})) {
+                            continue;
+                        }
                         if (!isset($data->fields[$group_default]->fields[$def])) {
                             $fieldObj = new \stdClass();
                             $fieldObj->field_title   = Text::_('COM_ISHOP_PRODUCT_' . $def);
@@ -336,6 +339,10 @@ class ProductModel extends ItemModel
                     // Также добавим сюда данные по весу и размерам
                     $sizes = ['width', 'height', 'depth', 'weight', 'width_pkg', 'height_pkg', 'depth_pkg', 'weight_pkg'];
                     foreach ($sizes as $size) {
+                        if ((float) $data->$size == 0) {
+                            continue;
+                        }
+
                         if (!isset($data->fields[$group_sizes]->fields[$size])) {
                             $fieldObj = new \stdClass();
                             $fieldObj->field_title   = Text::_('COM_ISHOP_PRODUCT_' . $size);
@@ -485,7 +492,7 @@ class ProductModel extends ItemModel
 
         // Если не установлены параметры категории,
         // просто вернем все характеристики в основной группе
-        if (empty($params->fields_groups)) {
+        if ($params == null) {
             $params = ComponentHelper::getParams('com_ishop');
             $group_default_id = (int) $params->get('group_default', 0);
             $query
