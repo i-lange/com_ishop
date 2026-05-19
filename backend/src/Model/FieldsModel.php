@@ -179,12 +179,9 @@ class FieldsModel extends ListModel
                 $db->quoteName('#__users', 'users_created'),
                 $db->quoteName('users_created.id') . ' = ' . $db->quoteName('a.created_by'))
             ->join('LEFT',
-                $db->quoteName('#__ishop_fields_map', 'fields_map'),
-                $db->quoteName('fields_map.field_id') . ' = ' . $db->quoteName('a.id'))
-            ->join('LEFT',
                 $db->quoteName('#__ishop_values', 'values'),
                 '(' .$db->quoteName('a.type') . ' = 1 AND ' .
-                $db->quoteName('values.id') . ' = ' . $db->quoteName('fields_map.value') . ')');
+                $db->quoteName('values.field_id') . ' = ' . $db->quoteName('a.id') . ')');
 
         //Log::add('SQL: ' . $query->__toString(), Log::INFO, 'ishop');
 
