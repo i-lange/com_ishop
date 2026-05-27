@@ -43,9 +43,20 @@ class ProductHelper
         $round = $params->get('roundPrice', 0);
         foreach ($markup_params as $params) {
             if ($params->access > 0 && in_array($params->access, $access_levels)) {
+                // Основная цена товара
                 if ($data->price > 0) {
                     // $params->percent_value всегда в процентах
                     $data->price = round($data->price + ($data->price * $params->percent_value / 100), $round);
+                }
+                // Старая цена товара (зачеркнутая)
+                if ($data->old_price > 0) {
+                    // $params->percent_value всегда в процентах
+                    $data->old_price = round($data->old_price + ($data->old_price * $params->percent_value / 100), $round);
+                }
+                // Цена товара со всеми действующими скидками
+                if ($data->sale_price > 0) {
+                    // $params->percent_value всегда в процентах
+                    $data->sale_price = round($data->sale_price + ($data->sale_price * $params->percent_value / 100), $round);
                 }
 
                 // Выходим после первой подходящей наценки
