@@ -21,9 +21,8 @@ use Joomla\CMS\Form\Field\ListField;
 class ProductsField extends ListField
 {
     /**
-     * Список связанных товаров с учетом контроля доступа
-     *
-     * @var    string
+     * Тип поля формы
+     * @var		string
      * @since 1.0.0
      */
     protected $type = 'Products';

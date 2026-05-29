@@ -146,7 +146,7 @@ class Com_IshopInstallerScript extends InstallerScript
             $message[] = '</ul>';
             $message[] = '<p class="mb-2">' . Text::_('COM_ISHOP_DONATE') . ': </p>';
             $message[] = "<a href='" . 
-                Text::_('COM_ISHOP_DONATE_URL') . "' target='_blank' class='btn btn-primary'>" .
+                Text::_('COM_ISHOP_DONATE_URL') . "' target='_blank' class='btn btn-warning'>" .
                 Text::_('COM_ISHOP_DONATE_BTN') . "</a>";
 
             // Объединяем все в строку
