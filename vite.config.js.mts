@@ -7,19 +7,33 @@ import viteCompression from 'vite-plugin-compression'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+const JS_ENTRY_FILES = [  
+  'admin.js',
+  'admin-product-batch.js',
+  'admin-product-batch-es5.js',
+  'front.js',
+]
+
 function getJsEntries(): Record<string, string> {
   const jsDir = path.resolve(__dirname, 'media/js')
   if (!fs.existsSync(jsDir)) return {}
 
-  const files = fs
-      .readdirSync(jsDir)
-      .filter((f) => f.endsWith('.js') && !f.endsWith('.min.js'))
-
   const entries: Record<string, string> = {}
-  for (const file of files) {
+
+  for (const file of JS_ENTRY_FILES) {
+    if (!file.endsWith('.js') || file.endsWith('.min.js')) continue
+
+    const fullPath = path.resolve(jsDir, file)
+
+    if (!fs.existsSync(fullPath)) {
+      console.warn(`[vite] JS entry not found: ${fullPath}`)
+      continue
+    }
+
     const name = path.basename(file, '.js')
-    entries[name] = path.resolve(jsDir, file)
+    entries[name] = fullPath
   }
+
   return entries
 }
 
@@ -39,15 +53,10 @@ export default defineConfig({
     rolldownOptions: {
       input: getJsEntries(),
       output: {
-        // ЯВНО разрешаем код-сплиттинг, чтобы несколько входов работали корректно
         codeSplitting: true,
-
-        // admin.js -> admin.min.js
         entryFileNames: '[name].min.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: '[name][extname]',
-        // format оставляем по умолчанию ('es'), IIFE не нужен
-        // format: 'es',
       },
     },
   },
@@ -57,7 +66,6 @@ export default defineConfig({
       algorithm: 'gzip',
       ext: '.gz',
       threshold: 0,
-      // gzip только *.min.js (чтобы получались admin.min.js.gz и т.п.)
       filter: (file) => file.endsWith('.min.js'),
     }),
   ],
