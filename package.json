@@ -48,7 +48,6 @@
     "test": "echo \"No automated tests yet\" && exit 0",
     "zip": "pnpm build && node pack.mjs"
   },
-  "packageManager": "pnpm@10.3.0",
   "engines": {
     "node": ">=24.0.0",
     "npm": ">=11.8.0",

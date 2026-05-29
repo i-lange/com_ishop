@@ -223,6 +223,22 @@ class ProductsModel extends ListModel
         $id .= ':' . $this->getState('filter.end_date_range');
         $id .= ':' . $this->getState('filter.relative_date');
         $id .= ':' . serialize($this->getState('filter.tag'));
+        $id .= ':' . $this->getState('filter.min_price');
+        $id .= ':' . $this->getState('filter.max_price');
+        $id .= ':' . $this->getState('filter.good_price');
+        $id .= ':' . $this->getState('filter.min_width');
+        $id .= ':' . $this->getState('filter.max_width');
+        $id .= ':' . $this->getState('filter.min_height');
+        $id .= ':' . $this->getState('filter.max_height');
+        $id .= ':' . $this->getState('filter.min_depth');
+        $id .= ':' . $this->getState('filter.max_depth');
+        $id .= ':' . $this->getState('filter.min_weight');
+        $id .= ':' . $this->getState('filter.max_weight');
+        $id .= ':' . serialize($this->getState('filter.ishop_fields'));
+        $id .= ':' . serialize($this->getState('filter.manufacturers'));
+        $id .= ':' . serialize($this->getState('filter.warehouses'));
+        $id .= ':' . $this->getState('filter.manufacturer_id');
+        $id .= ':' . serialize($this->getState('filter.warehouse_id'));
 
         return parent::getStoreId($id);
     }

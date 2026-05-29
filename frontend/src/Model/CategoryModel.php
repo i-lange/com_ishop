@@ -20,6 +20,7 @@ use Joomla\CMS\MVC\Model\ListModel;
 use Joomla\Component\Content\Site\Helper\QueryHelper;
 use Joomla\Database\ParameterType;
 use Joomla\Utilities\ArrayHelper;
+use Ilange\Component\Ishop\Site\Service\FilterRules;
 use RuntimeException;
 use stdClass;
 
@@ -236,110 +237,61 @@ class CategoryModel extends ListModel
         // Показывать ли избранные записи
         $this->setState('filter.featured', $params->get('show_featured'));
 
-        // Фильтрация по минимальной цене
-        $min_price = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.min_price', 'min_price', 0, 'float');
-        if ($min_price == '') {
-            $min_price = 0;
-        }
-        $this->setState('filter.min_price', $min_price);
+        $filterRoute = (bool) $app->getInput()->getInt('filter_route', 0);
+        $this->setState('filter.route', $filterRoute);
 
-        // Фильтрация по максимальной цене
-        $max_price = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.max_price', 'max_price', 0, 'float');
-        if ($max_price == '') {
-            $max_price = 0;
-        }
-        $this->setState('filter.max_price', $max_price);
+        $filterStateKey = 'com_ishop.category.filter.' . $itemid . '.';
 
-        // Фильтрация по наличию скидок
-        $good_price = (int) $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.good_price', 'good_price', 0, 'uint');
-        // Фильтр по скидкам работает, если скидки включены в настройках компонента
+        foreach ([
+            'min_price', 'max_price',
+            'min_width', 'max_width',
+            'min_height', 'max_height',
+            'min_depth', 'max_depth',
+            'min_weight', 'max_weight',
+        ] as $key) {
+            $value = $filterRoute
+                ? $app->getInput()->getInt($key, 0)
+                : $this->getUserStateFromRequest($filterStateKey . $key, $key, 0, 'int');
+
+            $this->setState('filter.' . $key, max(0, (int) $value));
+        }
+
+        $good_price = $filterRoute
+            ? $app->getInput()->getInt('good_price', 0)
+            : (int) $this->getUserStateFromRequest($filterStateKey . 'good_price', 'good_price', 0, 'uint');
+
         if ($params->get('discounts_use', 0)) {
-            $this->setState('filter.good_price', $good_price);
+            $this->setState('filter.good_price', $good_price > 0 ? 1 : 0);
         } else {
             $this->setState('filter.good_price', 0);
         }
 
-        // Фильтрация по минимальной ширине
-        $min_width = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.min_width', 'min_width', 0, 'float');
-        if ($min_width == '') {
-            $min_width = 0;
-        }
-        $this->setState('filter.min_width', $min_width);
+        $ishop_fields = $filterRoute
+            ? $app->getInput()->get('ishop_fields', [], 'array')
+            : $this->getUserStateFromRequest($filterStateKey . 'ishop_fields', 'ishop_fields', [], 'array');
+        $this->setState('filter.ishop_fields', FilterRules::normalizeFilterInput(['ishop_fields' => $ishop_fields])['ishop_fields'] ?? []);
 
-        // Фильтрация по максимальной ширине
-        $max_width = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.max_width', 'max_width', 0, 'float');
-        if ($max_width == '') {
-            $max_width = 0;
-        }
-        $this->setState('filter.max_width', $max_width);
-
-        // Фильтрация по минимальной высоте
-        $min_height = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.min_height', 'min_height', 0, 'float');
-        if ($min_height == '') {
-            $min_height = 0;
-        }
-        $this->setState('filter.min_height', $min_height);
-
-        // Фильтрация по максимальной высоте
-        $max_height = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.max_height', 'max_height', 0, 'float');
-        if ($max_height == '') {
-            $max_height = 0;
-        }
-        $this->setState('filter.max_height', $max_height);
-
-        // Фильтрация по минимальной глубине
-        $min_depth = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.min_depth', 'min_depth', 0, 'float');
-        if ($min_depth == '') {
-            $min_depth = 0;
-        }
-        $this->setState('filter.min_depth', $min_depth);
-
-        // Фильтрация по максимальной глубине
-        $max_depth = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.max_depth', 'max_depth', 0, 'float');
-        if ($max_depth == '') {
-            $max_depth = 0;
-        }
-        $this->setState('filter.max_depth', $max_depth);
-
-        // Фильтрация по весу
-        $min_weight = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.min_weight', 'min_weight', 0, 'float');
-        if ($min_weight == '') {
-            $min_weight = 0;
-        }
-        $this->setState('filter.min_weight', $min_weight);
-
-        // Фильтрация по весу
-        $max_weight = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.max_weight', 'max_weight', 0, 'float');
-        if ($max_weight == '') {
-            $max_weight = 0;
-        }
-        $this->setState('filter.max_weight', $max_weight);
-
-        // Фильтрация по характеристикам
-        $ishop_fields = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.ishop_fields', 'ishop_fields', [], 'array');
-        $this->setState('filter.ishop_fields', $ishop_fields);
-
-        // Фильтрация по списку производителей
-        $manufacturers = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.manufacturers', 'manufacturers', [], 'array');
-        if (isset($manufacturers[0]) && $manufacturers[0] == 0) {
-            array_shift($manufacturers);
-        }
+        $manufacturers = $filterRoute
+            ? $app->getInput()->get('manufacturers', [], 'array')
+            : $this->getUserStateFromRequest($filterStateKey . 'manufacturers', 'manufacturers', [], 'array');
+        $manufacturers = FilterRules::normalizeFilterInput(['manufacturers' => $manufacturers])['manufacturers'] ?? [];
         $this->setState('filter.manufacturers', $manufacturers);
 
-        // Фильтрация по наличию товаров на складах
-        $warehouses = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.warehouses', 'warehouses', [], 'array');
-        if (isset($warehouses[0]) && $warehouses[0] == 0) {
-            array_shift($warehouses);
-        }
+        $warehouses = $filterRoute
+            ? $app->getInput()->get('warehouses', [], 'array')
+            : $this->getUserStateFromRequest($filterStateKey . 'warehouses', 'warehouses', [], 'array');
+        $warehouses = FilterRules::normalizeFilterInput(['warehouses' => $warehouses])['warehouses'] ?? [];
         $this->setState('filter.warehouses', $warehouses);
 
-        // Фильтрация по id производителя
-        $manufacturer_id = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.manufacturer_id', 'manufacturer_id', 0, 'uint');
-        $this->setState('filter.manufacturer_id', $manufacturer_id);
+        $manufacturer_id = $filterRoute
+            ? $app->getInput()->getInt('manufacturer_id', 0)
+            : $this->getUserStateFromRequest($filterStateKey . 'manufacturer_id', 'manufacturer_id', 0, 'uint');
+        $this->setState('filter.manufacturer_id', (int) $manufacturer_id);
 
-        // Фильтрация по id склада
-        $warehouse_id = $this->getUserStateFromRequest('com_ishop.category.filter.' . $itemid . '.warehouse_id', 'warehouse_id', false, 'uint');
-        $this->setState('filter.warehouse_id', $warehouse_id);
+        $warehouse_id = $filterRoute
+            ? ($app->getInput()->exists('warehouse_id') ? $app->getInput()->getInt('warehouse_id', 0) : false)
+            : $this->getUserStateFromRequest($filterStateKey . 'warehouse_id', 'warehouse_id', false, 'uint');
+        $this->setState('filter.warehouse_id', $warehouse_id === false ? false : (int) $warehouse_id);
 
         //parent::populateState($ordering, $direction);
     }
@@ -356,50 +308,14 @@ class CategoryModel extends ListModel
         if ($this->_products === null && $category = $this->getCategory()) {
             $limit = $this->getState('list.limit');
 
-            $model = $this
-                ->bootComponent('com_ishop')
-                ->getMVCFactory()
-                ->createModel('Products', 'Site', ['ignore_request' => true]);
-
-            $model->setState('params', Factory::getApplication()->getParams());
-            $model->setState('filter.category_id', $category->id);
-            $model->setState('filter.published', $this->getState('filter.published'));
-            $model->setState('filter.access', $this->getState('filter.access'));
-            $model->setState('filter.language', $this->getState('filter.language'));
-            $model->setState('filter.featured', $this->getState('filter.featured'));
-            $model->setState('filter.tag', $this->getState('filter.tag'));
-            $model->setState('filter.subcategories', $this->getState('filter.subcategories'));
-            $model->setState('filter.max_category_levels', $this->getState('filter.max_category_levels'));
-
-            $model->setState('list.ordering', $this->getState('list.ordering', 'a.price'));
-            $model->setState('list.start', $this->getState('list.start'));
-            $model->setState('list.limit', $limit);
-            $model->setState('list.direction', $this->getState('list.direction', 'ASC'));
-            $model->setState('list.filter', $this->getState('list.filter'));
-
-            $model->setState('filter.min_price', $this->getState('filter.min_price'));
-            $model->setState('filter.max_price', $this->getState('filter.max_price'));
-            $model->setState('filter.good_price', $this->getState('filter.good_price'));
-            $model->setState('filter.min_width', $this->getState('filter.min_width'));
-            $model->setState('filter.max_width', $this->getState('filter.max_width'));
-            $model->setState('filter.min_height', $this->getState('filter.min_height'));
-            $model->setState('filter.max_height', $this->getState('filter.max_height'));
-            $model->setState('filter.min_depth', $this->getState('filter.min_depth'));
-            $model->setState('filter.max_depth', $this->getState('filter.max_depth'));
-            $model->setState('filter.min_weight', $this->getState('filter.min_weight'));
-            $model->setState('filter.max_weight', $this->getState('filter.max_weight'));
-            $model->setState('filter.ishop_fields', $this->getState('filter.ishop_fields'));
-            $model->setState('filter.manufacturers', $this->getState('filter.manufacturers'));
-            $model->setState('filter.warehouses', $this->getState('filter.warehouses'));
-            $model->setState('filter.manufacturer_id', $this->getState('filter.manufacturer_id'));
-            $model->setState('filter.warehouse_id', $this->getState('filter.warehouse_id'));
+            $model = $this->createProductsModel((int) $category->id, (int) $limit);
 
             if ($limit >= 0) {
                 $this->_products = $model->getItems();
 
                 if ($this->_products === false) {
                     // Если не удалось получить список товаров из базы данных
-                    throw new RuntimeException(implode("\n", $model->getError()), 500);
+                    throw new RuntimeException("Не удалось получить список товаров из базы данных", 500);
                 }
             } else {
                 $this->_products = [];
@@ -409,6 +325,79 @@ class CategoryModel extends ListModel
         }
 
         return $this->_products;
+    }
+
+    /**
+     * Получает ID товаров с учетом текущего состояния фильтра категории.
+     *
+     * @return array<int, int>
+     * @throws \Exception
+     * @since 1.0.0
+     */
+    public function getFilteredItemsId(): array
+    {
+        $category = $this->getCategory();
+
+        if (!$category) {
+            return [];
+        }
+
+        $model = $this->createProductsModel((int) $category->id, 0);
+
+        return ArrayHelper::toInteger((array) $model->getItemsId());
+    }
+
+    /**
+     * Создает модель товаров категории и передает ей текущее состояние фильтра.
+     *
+     * @param   int  $categoryId  ID категории
+     * @param   int  $limit       Лимит выборки
+     *
+     * @return ProductsModel
+     * @throws \Exception
+     * @since 1.0.0
+     */
+    private function createProductsModel(int $categoryId, int $limit)
+    {
+        $model = $this
+            ->bootComponent('com_ishop')
+            ->getMVCFactory()
+            ->createModel('Products', 'Site', ['ignore_request' => true]);
+
+        $model->setState('params', Factory::getApplication()->getParams());
+        $model->setState('filter.category_id', $categoryId);
+        $model->setState('filter.published', $this->getState('filter.published'));
+        $model->setState('filter.access', $this->getState('filter.access'));
+        $model->setState('filter.language', $this->getState('filter.language'));
+        $model->setState('filter.featured', $this->getState('filter.featured'));
+        $model->setState('filter.tag', $this->getState('filter.tag'));
+        $model->setState('filter.subcategories', $this->getState('filter.subcategories'));
+        $model->setState('filter.max_category_levels', $this->getState('filter.max_category_levels'));
+
+        $model->setState('list.ordering', $this->getState('list.ordering', 'a.price'));
+        $model->setState('list.start', $this->getState('list.start'));
+        $model->setState('list.limit', $limit);
+        $model->setState('list.direction', $this->getState('list.direction', 'ASC'));
+        $model->setState('list.filter', $this->getState('list.filter'));
+
+        $model->setState('filter.min_price', $this->getState('filter.min_price'));
+        $model->setState('filter.max_price', $this->getState('filter.max_price'));
+        $model->setState('filter.good_price', $this->getState('filter.good_price'));
+        $model->setState('filter.min_width', $this->getState('filter.min_width'));
+        $model->setState('filter.max_width', $this->getState('filter.max_width'));
+        $model->setState('filter.min_height', $this->getState('filter.min_height'));
+        $model->setState('filter.max_height', $this->getState('filter.max_height'));
+        $model->setState('filter.min_depth', $this->getState('filter.min_depth'));
+        $model->setState('filter.max_depth', $this->getState('filter.max_depth'));
+        $model->setState('filter.min_weight', $this->getState('filter.min_weight'));
+        $model->setState('filter.max_weight', $this->getState('filter.max_weight'));
+        $model->setState('filter.ishop_fields', $this->getState('filter.ishop_fields'));
+        $model->setState('filter.manufacturers', $this->getState('filter.manufacturers'));
+        $model->setState('filter.warehouses', $this->getState('filter.warehouses'));
+        $model->setState('filter.manufacturer_id', $this->getState('filter.manufacturer_id'));
+        $model->setState('filter.warehouse_id', $this->getState('filter.warehouse_id'));
+
+        return $model;
     }
 
     /**
@@ -652,7 +641,7 @@ class CategoryModel extends ListModel
             // Если нужно фильтровать по характеристикам
             $result->active['fields'] = $this->getState('filter.ishop_fields', []);
             foreach ($result->active['fields'] as $id => $field) {
-                $type = $result->ishop_fields[$id]->type;
+                $type = isset($result->ishop_fields[$id]) ? (int) $result->ishop_fields[$id]->type : null;
 
                 if ($type === 0) { // Числовые значение
                     if (!empty($field['min']) || !empty($field['max'])) {
@@ -663,7 +652,7 @@ class CategoryModel extends ListModel
                         $result->active_count++;
                     }
                 } elseif (!empty($field)) { // Строковые из списка
-                    $result->active_count += (count($field) - 1);
+                    $result->active_count += count(array_filter((array) $field));
                 }
             }
 
