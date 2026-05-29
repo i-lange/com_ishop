@@ -58,6 +58,7 @@ Production-ready сайт для проверки: `magazin-gefest-new.local`.
 - `frontend/` - клиентская часть компонента.
 - `frontend/src/Service/Router.php` - основной RouterView-роутер компонента.
 - `frontend/src/Service/FilterRules.php` - кастомные правила ЧПУ для результатов фильтрации категории.
+- `frontend/src/Controller/FilterController.php` - JSON endpoints `filter.preview` и `filter.reset` для AJAX-фильтра.
 - `frontend/src/Service/Category.php` - Categories-сервис для дерева категорий товаров.
 - `frontend/src/Helper/RouteHelper.php` - генерация внутренних ссылок компонента.
 - `frontend/src/Model/CategoryModel.php` - модель страницы категории, состояние фильтра, объект фильтра и делегирование списка товаров в `ProductsModel`.
@@ -76,31 +77,37 @@ Production-ready сайт для проверки: `magazin-gefest-new.local`.
 
 Текущая цепочка:
 
-1. `mod_ishop_filter` отображает форму фильтра и отправляет параметры (`manufacturers[]`, `warehouses[]`, `min_price`, `max_price`, `good_price`, `ishop_fields[...]`, габариты/вес) на текущий URL категории.
-2. `frontend/src/Model/CategoryModel.php::populateState()` читает параметры запроса через `getUserStateFromRequest()` в scope `com_ishop.category.filter.{categoryId}:{Itemid}.*`.
-3. `CategoryModel::getItems()` создает `ProductsModel` с `ignore_request => true` и вручную передает туда все `filter.*` state.
-4. `frontend/src/Model/ProductsModel.php::getListQuery()` применяет фильтры к SQL.
-5. `CategoryModel::getFilterObject()` собирает данные для модуля фильтра и счетчик активных фильтров.
-6. `frontend/src/Service/Router.php` регистрирует `FilterRules` после `MenuRules`, `StandardRules`, `NomenuRules`.
-7. `frontend/src/Service/FilterRules.php` сейчас обрабатывает ЧПУ-сегмент производителей вида `brand:alias` или `brand:alias1:alias2`, преобразуя его в `manufacturers`.
+1. `mod_ishop_filter` отображает форму фильтра, кладет в нее `data-category-id`, `data-item-id`, URL endpoints и отправляет выбранные значения AJAX-запросом в `com_ishop`.
+2. `media/mod_ishop_filter/front.js` отправляет POST на `index.php?option=com_ishop&task=filter.preview&format=json` с Joomla CSRF token, `category_id`, `Itemid` и полями формы (`manufacturers[]`, `warehouses[]`, `min_price`, `max_price`, `good_price`, `ishop_fields[...]`, габариты/вес).
+3. `frontend/src/Controller/FilterController.php::preview()` нормализует вход через `FilterRules::normalizeFilterInput()`, включает URL-driven режим (`filter_route=1`), получает ID подходящих товаров и возвращает JSON: `productCount`, `availableOptions`, `sefUrl`, `baseUrl`.
+4. Кнопка модуля `Показать n товаров` редиректит на полученный `sefUrl`. Reset отправляет POST на `task=filter.reset`, очищает session-state фильтра и редиректит на `baseUrl` категории.
+5. При прямой загрузке ЧПУ `frontend/src/Service/FilterRules.php::parse()` раскладывает SEO-сегменты в request keys, которые читает `CategoryModel::populateState()`.
+6. `CategoryModel::getItems()` создает `ProductsModel` с `ignore_request => true` и вручную передает туда все `filter.*` state.
+7. `frontend/src/Model/ProductsModel.php::getListQuery()` применяет фильтры к SQL.
+8. `CategoryModel::getFilterObject()` собирает начальные данные для модуля фильтра и счетчик активных фильтров.
+9. `frontend/src/Service/Router.php` регистрирует `FilterRules` после `MenuRules`, `StandardRules`, `NomenuRules`.
 
 Практические правила для ЧПУ фильтра:
 
 - Каноничная страница фильтра должна оставаться страницей `view=category&id={catid}` с тем же `Itemid`, чтобы `CategoryModel` использовал правильный user-state ключ.
-- При добавлении нового SEO-сегмента фильтра меняйте оба направления: `FilterRules::build()` и `FilterRules::parse()`.
-- После `parse()` значения должны попасть в те же request keys, которые читает `CategoryModel::populateState()` и ожидает `mod_ishop_filter`: например `manufacturers`, `warehouses`, `ishop_fields`, `min_price`, `max_price`, `good_price`.
+- При добавлении нового SEO-сегмента фильтра меняйте оба направления: `FilterRules::build()` и `FilterRules::parse()`, а также JSON-preview в `FilterController`, если модулю нужны доступные значения или URL.
+- После `parse()` значения должны попасть в те же request keys, которые читает `CategoryModel::populateState()` и отправляет `mod_ishop_filter`: `manufacturers`, `warehouses`, `ishop_fields`, `min_price`, `max_price`, `good_price`, `min_width`, `max_width`, `min_height`, `max_height`, `min_depth`, `max_depth`, `min_weight`, `max_weight`.
 - `FilterRules::build()` должен удалять из `$query` обработанные параметры, если они полностью перенесены в сегменты. Иначе Joomla может оставить дубли в query string.
-- Для производителей текущий формат - `brand:{manufacturer_alias}`. Несколько брендов разделяются двоеточием: `brand:bosch:gefests`.
-- Алиасы производителей берутся из `#__ishop_manufacturers.alias`; ID производителю соответствует `#__ishop_products.manufacturer_id`.
+- Поддерживаемые системные сегменты: `brand:alias1:alias2`, `sale:yes`, `price:min:max`, `warehouse:alias1:alias2`, `width:min:max`, `height:min:max`, `depth:min:max`, `weight:min:max`.
+- Для характеристик используются `#__ishop_fields.alias` и `#__ishop_values.alias`: `field:value1:value2` для списков, `field:min:max` для числовых, `field:yes` для булевых. `field:no` не используется.
+- Значения диапазонов в URL и AJAX должны быть целыми; `0` означает невыбранную границу и не должен создавать активный фильтр сам по себе.
+- Алиасы производителей берутся из `#__ishop_manufacturers.alias`; алиасы складов - из `#__ishop_warehouses.alias`; ID производителю соответствует `#__ishop_products.manufacturer_id`.
+- Канонический порядок сегментов и значений важен для защиты от дублей: сортируйте бренды, склады и значения характеристик по `ordering`/`alias`, как это делает `FilterRules`.
 - Не ломайте стандартный роутинг категорий: `Router::getCategorySegment()`, `getCategoryId()`, `noIDs` (`sef_ids` в параметрах компонента) и nested category path должны продолжать работать.
 - Не смешивайте `manufacturer_id` и `manufacturers[]` без явного решения. Список производителей из фильтра идет через state `filter.manufacturers`; одиночный производитель идет через `filter.manufacturer_id` и применяется только если список пуст.
 - Для характеристик фильтр товаров использует денормализованные таблицы `#__ishop_filter_cat_{categoryId}` и поля `map.field_{fieldId}`. Любой ЧПУ-формат для характеристик должен сохранять `categoryId` и учитывать, что таблица зависит от категории.
-- После изменения роутинга проверяйте прямую загрузку URL, отправку формы фильтра, пагинацию, сортировку, reset фильтра, canonical/дубли query string и активные значения в `mod_ishop_filter`.
+- Неизвестные или невалидные SEO-сегменты должны доходить до штатного 404 Joomla, а не молча игнорироваться.
+- После изменения роутинга проверяйте прямую загрузку URL, AJAX-preview, кнопку submit, reset фильтра, пагинацию, сортировку, canonical/дубли query string и активные значения в `mod_ishop_filter`.
 
 Полезные команды для анализа фильтра:
 
-- `rg -n "FilterRules|brand:|manufacturers|manufacturer_id|ishop_fields|min_price|max_price|good_price" frontend ../mod_ishop_filter`
-- `rg -n "getListQuery|filter\\.manufacturers|filter\\.ishop_fields|filter\\.warehouse|filter\\.min_price" frontend/src/Model`
+- `rg -n "FilterRules|FilterController|filter.preview|filter.reset|sefUrl|baseUrl|brand:|sale:|warehouse|manufacturers|ishop_fields|min_price|max_price|good_price" frontend ../mod_ishop_filter`
+- `rg -n "getListQuery|getFilteredItemsId|filter\.manufacturers|filter\.ishop_fields|filter\.warehouse|filter\.min_price" frontend/src/Model frontend/src/Controller`
 
 ## Команды
 
@@ -146,11 +153,12 @@ Production-ready сайт для проверки: `magazin-gefest-new.local`.
 - главную магазина;
 - список категорий;
 - категорию без фильтра;
-- категорию с фильтром по бренду через форму;
-- прямой ЧПУ URL категории с `brand:alias`;
-- категорию с несколькими брендами, если включен такой сценарий;
+- AJAX-preview в `mod_ishop_filter`: счетчик, доступность опций, `sefUrl`, `baseUrl`;
+- submit фильтра по бренду, складу, скидке, цене, габаритам/весу и характеристикам;
+- прямые ЧПУ URL с `brand:alias`, `sale:yes`, `price:min:max`, `warehouse:alias`, `width/height/depth/weight:min:max` и сегментами характеристик;
+- категорию с несколькими брендами/складами/значениями list-характеристик, если включен такой сценарий;
 - сортировку и пагинацию после активного фильтра;
-- reset фильтра;
+- reset фильтра на базовый URL категории;
 - карточку товара;
 - корзину и checkout;
 - поиск;
@@ -162,4 +170,5 @@ Production-ready сайт для проверки: `magazin-gefest-new.local`.
 - Автоматических тестов пока нет; `pnpm test` является заглушкой.
 - В проекте есть сгенерированные CSS/JS/gzip файлы. Их изменение должно быть следствием сборки.
 - Фильтр зависит от денормализованных таблиц `#__ishop_filter_cat_{categoryId}`. Если таблица отсутствует, `CategoryModel::getItemsId()` возвращает fallback-данные или пустой результат в зависимости от сценария.
-- `mod_ishop_filter/media/js/front.js` получает `category_id` из query string (`id`). На ЧПУ-страницах без `?id=` AJAX-подсказки могут требовать отдельной доработки модуля, даже если серверная фильтрация работает после submit.
+- `mod_ishop_filter/media/js/front.js` должен получать `category_id` из `data-category-id` формы, а не из query string: на ЧПУ-страницах `?id=` обычно отсутствует.
+- Основной AJAX фильтра больше не должен идти через `com_ajax&module=ishop_filter`; используйте endpoints `com_ishop` `filter.preview` и `filter.reset`.
