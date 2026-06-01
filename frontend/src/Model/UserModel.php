@@ -34,6 +34,30 @@ class UserModel extends ItemModel
     protected $_context = 'com_ishop.user';
 
     /**
+     * Загруженные данные текущего пользователя в рамках одного HTTP-запроса.
+     *
+     * @var object|false|null
+     * @since 1.0.0
+     */
+    protected static $currentItem = null;
+
+    /**
+     * Флаг завершенной попытки загрузки текущего пользователя.
+     *
+     * @var bool
+     * @since 1.0.0
+     */
+    protected static bool $currentItemLoaded = false;
+
+    /**
+     * Идентификатор покупателя из cookie или из созданной записи.
+     *
+     * @var string
+     * @since 1.0.0
+     */
+    protected static string $currentPass = '';
+
+    /**
      * Метод для автоматического заполнения модели
      * Вызов getState в этом методе приведет к рекурсии
      * @return void
@@ -44,12 +68,7 @@ class UserModel extends ItemModel
     {
         $app = Factory::getApplication();
 
-        // Проверяем, существует ли такой пользователь в базе
-        $user_pass = $app->getInput()->cookie->get('ishop_user', '');
-        $user_exist = $this->getTable()->load(['pass' => $user_pass]);
-        if (empty($user_pass) || !$user_exist) {
-            $user_pass = $this->createUser();
-        }
+        $user_pass = self::$currentPass ?: $app->getInput()->cookie->get('ishop_user', '');
         $this->setState('user.pass', $user_pass);
 
         // Текущая зона доставки
@@ -70,6 +89,18 @@ class UserModel extends ItemModel
      */
     public function getItem($pk = null)
     {
+        $pk = $pk ? (int) $pk : null;
+
+        if ($pk === null && self::$currentItemLoaded) {
+            if (self::$currentItem === false) {
+                return false;
+            }
+
+            $this->syncCurrentItem(self::$currentItem);
+
+            return clone self::$currentItem;
+        }
+
         $user_id = $this->getCurrentUser()->id;
 
         // Уникальный идентификатор покупателя из cookie,
@@ -86,39 +117,43 @@ class UserModel extends ItemModel
         } elseif ($user_id) {
             // Если ishop_user не установлен, но пользователь Joomla авторизован
             $where = ['user_id' => $user_id];
-        }
-        elseif ($pk) {
+        } elseif ($pk) {
             // Если есть идентификатор записи в таблице
             $where = ['id' => $pk];
         } else {
-            return false;
+            $where = null;
         }
 
         $user_data = $this->getTable();
-        if (!$user_data->load($where)) {
+        $loaded = $where ? $user_data->load($where) : false;
+
+        // Если cookie устарела, для авторизованного пользователя
+        // можно восстановить профиль по Joomla user_id.
+        if (!$loaded && !empty($user_pass) && $user_id) {
+            $loaded = $user_data->load(['user_id' => $user_id]);
+        }
+
+        // Для текущего покупателя без найденного профиля создаем новую запись.
+        if (!$loaded && $pk === null) {
+            $user_pass = $this->createUser();
+
+            if ($user_pass) {
+                self::$currentPass = $user_pass;
+                $this->setState('user.pass', $user_pass);
+                $loaded = $user_data->load(['pass' => $user_pass]);
+            }
+        }
+
+        if (!$loaded) {
+            if ($pk === null) {
+                self::$currentItem = false;
+                self::$currentItemLoaded = true;
+            }
+
             return false;
         }
 
-        // Проверяем, не изменил ли пользователь зону доставки
-        $active_zone = $this->getState('active_zone', 0);
-        if ($active_zone && ($active_zone !== $user_data->zone_id)) {
-            $user_data->zone_id = $active_zone;
-            $this->setData($user_data, 'zone_id');
-        }
-
-        // Если нашли оба идентификатора, но user_id Joomla не записан,
-        // нужно дополнить все записи идентификатором Joomla
-        if ($user_pass && $user_id && empty($user_data->user_id)) {
-            $user_data->pass = $user_pass;
-            $this->setData($user_data, 'user_id');
-        }
-        // Если нашли оба идентификатора, но user_id Joomla
-        // не совпадает с текущим - обновим данные по значению pass
-        elseif ($user_pass && $user_id && ($user_id !== $user_data->user_id)) {
-            $user_data->pass = $user_pass;
-            $user_data->user_id = $user_id;
-            $this->setData($user_data, 'all');
-        }
+        $this->syncCurrentItem($user_data);
 
         // Устанавливаем данные пользователя в cookie,
         // если $user_password пуст или найден другой $user_password
@@ -135,13 +170,15 @@ class UserModel extends ItemModel
             );
         }
 
-        // преобразуем сериализованные данные в массивы
-        $user_data->cart = (new Registry($user_data->cart))->toArray();
-        $user_data->wishlist = (new Registry($user_data->wishlist))->toArray();
-        $user_data->compare = (new Registry($user_data->compare))->toArray();
-        $user_data->viewed = (new Registry($user_data->viewed))->toArray();
+        self::$currentPass = $user_data->pass;
+        $this->normaliseUserData($user_data);
 
-        return $user_data;
+        if ($pk === null) {
+            self::$currentItem = clone $user_data;
+            self::$currentItemLoaded = true;
+        }
+
+        return clone $user_data;
     }
 
     /**
@@ -207,35 +244,35 @@ class UserModel extends ItemModel
 
         // Что будем обновлять указано в $type
         if ($type === 'all') {
-            $query->set($db->qn('user_id')  . ' = ' . $data->user_id);
-            $query->set($db->qn('zone_id')  . ' = ' . $data->zone_id);
-            $query->set($db->qn('wishlist') . ' = ' . $db->q($data->wishlist));
-            $query->set($db->qn('compare')  . ' = ' . $db->q($data->compare));
-            $query->set($db->qn('viewed')   . ' = ' . $db->q($data->viewed));
-            $query->set($db->qn('cart')     . ' = ' . $db->q($data->cart));
+            $query->set($db->qn('user_id')  . ' = ' . (int) $data->user_id);
+            $query->set($db->qn('zone_id')  . ' = ' . (int) $data->zone_id);
+            $query->set($db->qn('wishlist') . ' = ' . $db->q($this->registryToString($data->wishlist ?? [])));
+            $query->set($db->qn('compare')  . ' = ' . $db->q($this->registryToString($data->compare ?? [])));
+            $query->set($db->qn('viewed')   . ' = ' . $db->q($this->registryToString($data->viewed ?? [])));
+            $query->set($db->qn('cart')     . ' = ' . $db->q($this->registryToString($data->cart ?? [])));
         } elseif ($type === 'user_id') {
-            $query->set($db->qn('user_id')  . ' = ' . $data->user_id);
+            $query->set($db->qn('user_id')  . ' = ' . (int) $data->user_id);
         } elseif ($type === 'zone_id') {
-            $query->set($db->qn('zone_id')  . ' = ' . $data->zone_id);
+            $query->set($db->qn('zone_id')  . ' = ' . (int) $data->zone_id);
         } elseif ($type === 'wishlist') {
-            $query->set($db->qn('wishlist') . ' = ' . $db->q($data->wishlist));
+            $query->set($db->qn('wishlist') . ' = ' . $db->q($this->registryToString($data->wishlist ?? [])));
         } elseif ($type === 'compare') {
-            $query->set($db->qn('compare')  . ' = ' . $db->q($data->compare));
+            $query->set($db->qn('compare')  . ' = ' . $db->q($this->registryToString($data->compare ?? [])));
         } elseif ($type === 'viewed') {
-            $query->set($db->qn('viewed')   . ' = ' . $db->q($data->viewed));
+            $query->set($db->qn('viewed')   . ' = ' . $db->q($this->registryToString($data->viewed ?? [])));
         } else {
-            $query->set($db->qn('cart')     . ' = ' . $db->q($data->cart));
+            $query->set($db->qn('cart')     . ' = ' . $db->q($this->registryToString($data->cart ?? [])));
         }
         $query->set('modified = ' . $db->q($date));
 
         // Обновить нужно во всех записях,
         // которые связаны либо по id, либо по pass, либо по user_id
-        $where = $db->qn('id') . ' = ' . $data->id;
+        $where = $db->qn('id') . ' = ' . (int) $data->id;
         if (!empty($data->pass)) {
             $where .= ' OR ' . $db->qn('pass') . ' = ' . $db->q($data->pass);
         }
-        if ($data->user_id > 0) {
-            $where .= ' OR ' . $db->qn('user_id') . ' = ' . $data->user_id;
+        if ((int) $data->user_id > 0) {
+            $where .= ' OR ' . $db->qn('user_id') . ' = ' . (int) $data->user_id;
         }
         $query->where($where);
         $db->setQuery($query);
@@ -246,6 +283,162 @@ class UserModel extends ItemModel
             return false;
         }
 
+        $this->updateCachedItem($data, $type, $date);
+
         return true;
+    }
+
+    /**
+     * Синхронизирует данные текущего пользователя с контекстом запроса.
+     *
+     * @param object $user_data Данные пользователя
+     *
+     * @return void
+     * @throws \Exception
+     * @since 1.0.0
+     */
+    private function syncCurrentItem(object $user_data): void
+    {
+        $user_id = (int) $this->getCurrentUser()->id;
+        $user_pass = (string) $this->getState('user.pass');
+
+        // Проверяем, не изменил ли пользователь зону доставки.
+        $active_zone = (int) $this->getState('active_zone', 0);
+        if ($active_zone && ($active_zone !== (int) $user_data->zone_id)) {
+            $user_data->zone_id = $active_zone;
+            $this->setData($user_data, 'zone_id');
+        }
+
+        // Если нашли оба идентификатора, но user_id Joomla не записан,
+        // нужно дополнить все записи идентификатором Joomla.
+        if ($user_pass && $user_id && empty($user_data->user_id)) {
+            $user_data->pass = $user_pass;
+            $user_data->user_id = $user_id;
+            $this->setData($user_data, 'user_id');
+        }
+        // Если нашли оба идентификатора, но user_id Joomla
+        // не совпадает с текущим - обновим данные по значению pass.
+        elseif ($user_pass && $user_id && ($user_id !== (int) $user_data->user_id)) {
+            $user_data->pass = $user_pass;
+            $user_data->user_id = $user_id;
+            $this->setData($user_data, 'all');
+        }
+    }
+
+    /**
+     * Преобразует сериализованные списки пользователя в массивы.
+     *
+     * @param object $user_data Данные пользователя
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    private function normaliseUserData(object $user_data): void
+    {
+        $user_data->id = (int) $user_data->id;
+        $user_data->user_id = (int) $user_data->user_id;
+        $user_data->zone_id = (int) $user_data->zone_id;
+        $user_data->cart = $this->registryToArray($user_data->cart ?? []);
+        $user_data->wishlist = $this->registryToArray($user_data->wishlist ?? []);
+        $user_data->compare = $this->registryToArray($user_data->compare ?? []);
+        $user_data->viewed = $this->registryToArray($user_data->viewed ?? []);
+    }
+
+    /**
+     * Обновляет кэш текущего пользователя после записи в базу.
+     *
+     * @param object $data Данные пользователя
+     * @param string $type Тип списка
+     * @param string $date Дата изменения
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    private function updateCachedItem(object $data, string $type, string $date): void
+    {
+        if (!self::$currentItemLoaded || self::$currentItem === false || !$this->isCachedItem($data)) {
+            return;
+        }
+
+        if ($type === 'all' || $type === 'user_id') {
+            self::$currentItem->user_id = (int) $data->user_id;
+        }
+
+        if ($type === 'all' || $type === 'zone_id') {
+            self::$currentItem->zone_id = (int) $data->zone_id;
+        }
+
+        foreach (['cart', 'wishlist', 'compare', 'viewed'] as $field) {
+            if ($type === 'all' || $type === $field) {
+                self::$currentItem->$field = $this->registryToArray($data->$field ?? []);
+            }
+        }
+
+        self::$currentItem->modified = $date;
+    }
+
+    /**
+     * Проверяет, относится ли объект данных к текущему кэшированному профилю.
+     *
+     * @param object $data Данные пользователя
+     *
+     * @return bool
+     * @since 1.0.0
+     */
+    private function isCachedItem(object $data): bool
+    {
+        if (!empty($data->id) && (int) $data->id === (int) self::$currentItem->id) {
+            return true;
+        }
+
+        if (!empty($data->pass) && $data->pass === self::$currentItem->pass) {
+            return true;
+        }
+
+        return !empty($data->user_id)
+            && (int) $data->user_id > 0
+            && (int) $data->user_id === (int) self::$currentItem->user_id;
+    }
+
+    /**
+     * Преобразует значение Joomla Registry в массив.
+     *
+     * @param mixed $value Значение
+     *
+     * @return array
+     * @since 1.0.0
+     */
+    private function registryToArray($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if ($value instanceof Registry) {
+            return $value->toArray();
+        }
+
+        return (new Registry($value ?: []))->toArray();
+    }
+
+    /**
+     * Преобразует значение списка пользователя в строку для хранения.
+     *
+     * @param mixed $value Значение
+     *
+     * @return string
+     * @since 1.0.0
+     */
+    private function registryToString($value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if ($value instanceof Registry) {
+            return (string) $value;
+        }
+
+        return (string) new Registry($value ?: []);
     }
 }
