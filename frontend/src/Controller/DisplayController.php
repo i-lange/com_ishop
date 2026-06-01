@@ -46,22 +46,18 @@ class DisplayController extends BaseController
 
         parent::display($cachable, $urlparams);
 
-        if ($this->input->exists('ishop_fields') ||
-            $this->input->exists('filter_order') ||
+        if ($this->input->exists('filter_order') ||
             $this->input->exists('active_zone')) {
-
             $this->setRedirect($_SERVER['REQUEST_URI']);
         }
 
         if ($vName === 'checkout' && $this->input->exists('products')) {
             $this->app->setUserState('com_ishop.checkout.products', $this->input->getInt('products', []));
-
             $this->setRedirect($_SERVER['REQUEST_URI']);
         }
 
         if ($vName === 'compare' && $this->input->exists('category_id')) {
             $this->app->setUserState('com_ishop.compare.category_id', $this->input->getInt('category_id',0));
-
             $this->setRedirect($_SERVER['REQUEST_URI']);
         }
 
