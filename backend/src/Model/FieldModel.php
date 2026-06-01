@@ -234,6 +234,25 @@ class FieldModel extends AdminModel
         // Преобразуем изображения в массив
         $registry     = new Registry($item->images);
         $item->images = $registry->toArray();
+        $item->values = [];
+
+        if (!empty($item->id)) {
+            $db    = $this->getDatabase();
+            $query = $db->getQuery(true)
+                ->select([
+                    $db->quoteName('id'),
+                    $db->quoteName('value'),
+                    $db->quoteName('alias'),
+                    $db->quoteName('icon'),
+                ])
+                ->from($db->quoteName('#__ishop_values'))
+                ->where($db->quoteName('field_id') . ' = :fieldId')
+                ->bind(':fieldId', $item->id, ParameterType::INTEGER)
+                ->order($db->quoteName('ordering') . ' ASC, ' . $db->quoteName('value') . ' ASC');
+
+            $db->setQuery($query);
+            $item->values = $db->loadAssocList();
+        }
 
         // Загрузка связанных по языку производителей
         $assoc = Associations::isEnabled();
@@ -285,7 +304,34 @@ class FieldModel extends AdminModel
             }
         }
 
-        return parent::validate($form, $data, $group);
+        $values = $data['values'] ?? [];
+
+        if ($data = parent::validate($form, $data, $group)) {
+            $data['values'] = $values;
+
+            if (!$this->validateTypeChange($data)) {
+                return false;
+            }
+
+            if ((int)($data['type'] ?? 0) === 1 && !empty($data['id'])) {
+                $values = $this->normaliseValues($values);
+
+                if (!$this->validateValues($values)) {
+                    return false;
+                }
+
+                if (!$this->validateValueIds((int)$data['id'], $values) ||
+                    !$this->validateValueDeletion((int)$data['id'], $values)) {
+                    return false;
+                }
+
+                $data['values'] = $values;
+            }
+
+            return $data;
+        }
+
+        return false;
     }
 
     /**
@@ -302,6 +348,9 @@ class FieldModel extends AdminModel
         $app    = Factory::getApplication();
         $input  = $app->getInput();
         $filter = InputFilter::getInstance();
+        $values = $data['values'] ?? [];
+
+        unset($data['values']);
 
         if (isset($data['metadata']['author'])) {
             $data['metadata']['author'] = $filter->clean($data['metadata']['author'], 'TRIM');
@@ -355,10 +404,357 @@ class FieldModel extends AdminModel
         }
 
         if (parent::save($data)) {
+            $fieldId = (int)$this->getState('field.id');
+
+            if ((int)($data['type'] ?? 0) === 1 && $fieldId > 0 && !empty($data['id'])) {
+                return $this->saveValues($fieldId, (array)$values, (string)($data['language'] ?? '*'));
+            }
+
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Проверяет, можно ли менять тип характеристики.
+     *
+     * @param   array  $data  Данные формы
+     *
+     * @return  bool
+     * @throws \Exception
+     * @since   1.0.0
+     */
+    private function validateTypeChange(array $data): bool
+    {
+        $fieldId = (int)($data['id'] ?? 0);
+
+        if (!$fieldId) {
+            return true;
+        }
+
+        $table = $this->getTable();
+
+        if (!$table->load($fieldId) || (int)$table->type === (int)($data['type'] ?? 0)) {
+            return true;
+        }
+
+        if ($this->hasValues($fieldId) || $this->hasProductLinks($fieldId)) {
+            Factory::getApplication()->enqueueMessage(
+                Text::_('COM_ISHOP_ERROR_FIELD_TYPE_CHANGE_HAS_VALUES'),
+                'error'
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Нормализует строки значений характеристики.
+     *
+     * @param   array  $rows  Строки subform
+     *
+     * @return  array
+     * @since   1.0.0
+     */
+    private function normaliseValues(array $rows): array
+    {
+        $values = [];
+        $ordering = 1;
+
+        foreach ($rows as $row) {
+            if (is_object($row)) {
+                $row = (array)$row;
+            }
+
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $value = trim((string)($row['value'] ?? ''));
+            $alias = trim((string)($row['alias'] ?? ''));
+            $icon  = trim((string)($row['icon'] ?? ''));
+
+            if ($value === '' && $alias === '' && $icon === '' && empty($row['id'])) {
+                continue;
+            }
+
+            $alias = $alias === '' ? $value : $alias;
+            $alias = ApplicationHelper::stringURLSafe($alias);
+
+            if (trim(str_replace('-', '', $alias)) === '') {
+                $alias = Factory::getDate()->format('Y-m-d-H-i-s');
+            }
+
+            $values[] = [
+                'id'       => (int)($row['id'] ?? 0),
+                'value'    => $value,
+                'alias'    => $alias,
+                'icon'     => $icon,
+                'ordering' => $ordering++,
+            ];
+        }
+
+        return $values;
+    }
+
+    /**
+     * Проверяет строки значений на обязательность и дубли.
+     *
+     * @param   array  $values  Нормализованные строки значений
+     *
+     * @return  bool
+     * @since   1.0.0
+     */
+    private function validateValues(array $values): bool
+    {
+        $seenValues = [];
+        $seenAliases = [];
+
+        foreach ($values as $value) {
+            if ($value['value'] === '') {
+                Factory::getApplication()->enqueueMessage(
+                    Text::_('COM_ISHOP_ERROR_FIELD_VALUE_EMPTY'),
+                    'error'
+                );
+
+                return false;
+            }
+
+            $valueKey = mb_strtolower($value['value']);
+
+            if (isset($seenValues[$valueKey])) {
+                Factory::getApplication()->enqueueMessage(
+                    Text::sprintf('COM_ISHOP_ERROR_FIELD_VALUE_DUPLICATE', $value['value']),
+                    'error'
+                );
+
+                return false;
+            }
+
+            $seenValues[$valueKey] = true;
+
+            if (isset($seenAliases[$value['alias']])) {
+                Factory::getApplication()->enqueueMessage(
+                    Text::sprintf('COM_ISHOP_ERROR_FIELD_VALUE_ALIAS_DUPLICATE', $value['alias']),
+                    'error'
+                );
+
+                return false;
+            }
+
+            $seenAliases[$value['alias']] = true;
+        }
+
+        return true;
+    }
+
+    /**
+     * Сохраняет значения list-характеристики.
+     *
+     * @param   int     $fieldId   ID характеристики
+     * @param   array   $values    Строки значений
+     * @param   string  $language  Язык характеристики
+     *
+     * @return  bool
+     * @throws \Exception
+     * @since   1.0.0
+     */
+    private function saveValues(int $fieldId, array $values, string $language): bool
+    {
+        $values = $this->normaliseValues($values);
+
+        if (!$this->validateValues($values)) {
+            return false;
+        }
+
+        $existingIds = $this->getValueIds($fieldId);
+        $savedIds    = [];
+        $language    = $language !== '' ? $language : '*';
+
+        foreach ($values as $value) {
+            $table = $this
+                ->bootComponent('com_ishop')
+                ->getMVCFactory()
+                ->createTable('Value', 'Administrator', ['dbo' => $this->getDatabase()]);
+
+            if ($value['id'] > 0 && !$table->load($value['id'])) {
+                Factory::getApplication()->enqueueMessage(
+                    Text::_('COM_ISHOP_ERROR_FIELD_VALUE_INVALID'),
+                    'error'
+                );
+
+                return false;
+            }
+
+            if ($value['id'] > 0 && (int)$table->field_id !== $fieldId) {
+                Factory::getApplication()->enqueueMessage(
+                    Text::_('COM_ISHOP_ERROR_FIELD_VALUE_INVALID'),
+                    'error'
+                );
+
+                return false;
+            }
+
+            $table->id       = $value['id'];
+            $table->value    = $value['value'];
+            $table->alias    = $value['alias'];
+            $table->field_id = $fieldId;
+            $table->icon     = $value['icon'];
+            $table->ordering = $value['ordering'];
+            $table->language = $language;
+
+            if (!$table->store()) {
+                return false;
+            }
+
+            $savedIds[] = (int)$table->id;
+        }
+
+        $deleteIds = array_values(array_diff($existingIds, $savedIds));
+
+        if (empty($deleteIds)) {
+            return true;
+        }
+
+        if ($this->hasProductLinks($fieldId, $deleteIds)) {
+            Factory::getApplication()->enqueueMessage(
+                Text::_('COM_ISHOP_ERROR_FIELD_VALUE_DELETE_IN_USE'),
+                'error'
+            );
+
+            return false;
+        }
+
+        $valueModel = $this
+            ->bootComponent('com_ishop')
+            ->getMVCFactory()
+            ->createModel('Value', 'Administrator', ['ignore_request' => true]);
+
+        return $valueModel->delete($deleteIds);
+    }
+
+    /**
+     * Проверяет, что существующие строки принадлежат текущей характеристике.
+     *
+     * @param   int    $fieldId  ID характеристики
+     * @param   array  $values   Нормализованные строки значений
+     *
+     * @return  bool
+     * @throws \Exception
+     * @since   1.0.0
+     */
+    private function validateValueIds(int $fieldId, array $values): bool
+    {
+        $existingIds = $this->getValueIds($fieldId);
+
+        foreach ($values as $value) {
+            if ($value['id'] > 0 && !in_array($value['id'], $existingIds, true)) {
+                Factory::getApplication()->enqueueMessage(
+                    Text::_('COM_ISHOP_ERROR_FIELD_VALUE_INVALID'),
+                    'error'
+                );
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Проверяет, что из формы не удаляются используемые товарами значения.
+     *
+     * @param   int    $fieldId  ID характеристики
+     * @param   array  $values   Нормализованные строки значений
+     *
+     * @return  bool
+     * @throws \Exception
+     * @since   1.0.0
+     */
+    private function validateValueDeletion(int $fieldId, array $values): bool
+    {
+        $existingIds = $this->getValueIds($fieldId);
+        $postedIds   = array_values(array_filter(array_map('intval', array_column($values, 'id'))));
+        $deleteIds   = array_values(array_diff($existingIds, $postedIds));
+
+        if (!empty($deleteIds) && $this->hasProductLinks($fieldId, $deleteIds)) {
+            Factory::getApplication()->enqueueMessage(
+                Text::_('COM_ISHOP_ERROR_FIELD_VALUE_DELETE_IN_USE'),
+                'error'
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Возвращает ID значений характеристики.
+     *
+     * @param   int  $fieldId  ID характеристики
+     *
+     * @return  array
+     * @throws \Exception
+     * @since   1.0.0
+     */
+    private function getValueIds(int $fieldId): array
+    {
+        $db    = $this->getDatabase();
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('id'))
+            ->from($db->quoteName('#__ishop_values'))
+            ->where($db->quoteName('field_id') . ' = :fieldId')
+            ->bind(':fieldId', $fieldId, ParameterType::INTEGER);
+
+        $db->setQuery($query);
+
+        return array_map('intval', $db->loadColumn());
+    }
+
+    /**
+     * Проверяет наличие значений у характеристики.
+     *
+     * @param   int  $fieldId  ID характеристики
+     *
+     * @return  bool
+     * @throws \Exception
+     * @since   1.0.0
+     */
+    private function hasValues(int $fieldId): bool
+    {
+        return !empty($this->getValueIds($fieldId));
+    }
+
+    /**
+     * Проверяет использование характеристики или конкретных значений в товарах.
+     *
+     * @param   int    $fieldId   ID характеристики
+     * @param   array  $valueIds  ID значений
+     *
+     * @return  bool
+     * @throws \Exception
+     * @since   1.0.0
+     */
+    private function hasProductLinks(int $fieldId, array $valueIds = []): bool
+    {
+        $db    = $this->getDatabase();
+        $query = $db->getQuery(true)
+            ->select('COUNT(*)')
+            ->from($db->quoteName('#__ishop_fields_map'))
+            ->where($db->quoteName('field_id') . ' = :fieldId')
+            ->bind(':fieldId', $fieldId, ParameterType::INTEGER);
+
+        if (!empty($valueIds)) {
+            $query->whereIn($db->quoteName('value'), $valueIds);
+        }
+
+        $db->setQuery($query);
+
+        return (int)$db->loadResult() > 0;
     }
 
 

@@ -105,6 +105,16 @@ $tmpl    = $tmpl ? '&tmpl=' . $tmpl : '';
         <?php echo HTMLHelper::_('uitab.endTab'); ?>
 
 
+        <?php if ((int) $this->item->id > 0 && (int) $this->item->type === 1) : ?>
+            <?php echo HTMLHelper::_('uitab.addTab', 'myTab', 'values', Text::_('COM_ISHOP_FIELD_VALUES')); ?>
+            <fieldset id="fieldset-values" class="options-form">
+                <legend><?php echo Text::_('COM_ISHOP_FIELD_VALUES'); ?></legend>
+                <div><?php echo $this->form->renderField('values'); ?></div>
+            </fieldset>
+            <?php echo HTMLHelper::_('uitab.endTab'); ?>
+        <?php endif; ?>
+
+
         <?php echo HTMLHelper::_('uitab.addTab', 'myTab', 'publishing', Text::_('COM_ISHOP_FORM_TAB_PUBLISHING')); ?>
         <fieldset id="fieldset-publishingdata" class="options-form">
             <legend><?php echo Text::_('JGLOBAL_FIELDSET_PUBLISHING'); ?></legend>

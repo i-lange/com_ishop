@@ -62,6 +62,32 @@
         <field name="unit"
                type="text"
                label="COM_ISHOP_FIELD_UNIT"/>
+        <field name="values"
+               type="subform"
+               label="COM_ISHOP_FIELD_VALUES"
+               multiple="true"
+               layout="joomla.form.field.subform.repeatable-table">
+            <form>
+                <field name="id"
+                       type="hidden"
+                       filter="integer"/>
+                <field name="value"
+                       type="text"
+                       required="true"
+                       maxlength="255"
+                       label="COM_ISHOP_FIELD_VALUE"/>
+                <field name="alias"
+                       type="text"
+                       maxlength="400"
+                       label="JFIELD_ALIAS_LABEL"
+                       description="JFIELD_ALIAS_DESC"
+                       hint="JFIELD_ALIAS_PLACEHOLDER"/>
+                <field name="icon"
+                       type="text"
+                       maxlength="25"
+                       label="COM_ISHOP_FIELD_ICON"/>
+            </form>
+        </field>
         <field name="created"
                type="calendar"
                label="COM_ISHOP_FIELD_CREATED_LABEL"
