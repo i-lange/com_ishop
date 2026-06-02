@@ -11,15 +11,12 @@ namespace Ilange\Component\Ishop\Site\Model;
 
 defined('_JEXEC') or die;
 
-use DateTime;
 use Ilange\Component\Ishop\Site\Helper\PriceHelper;
 use Ilange\Component\Ishop\Site\Helper\ProductHelper;
 use Ilange\Component\Ishop\Site\Helper\QueryHelper;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
-use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Multilanguage;
-use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Model\ListModel;
 use Joomla\Database\ParameterType;
 use Joomla\Database\QueryInterface;
@@ -675,15 +672,6 @@ class ProductsModel extends ListModel
             }
         }
 
-        // Текущая зона доставки
-        $active_zone = $this->getMVCFactory()->createModel('Zones', 'Site')->getActive();
-        // Текущая дата
-        $today = new DateTime();
-        // Завтра
-        $tomorrow = (clone $today)->modify('+1 day');
-        // Послезавтра
-        $day_after = (clone $today)->modify('+2 day');
-
         // Текущая корзина пользователя
         $cart = $this->getMVCFactory()->createModel('Cart', 'Site')->getCartList();
         // Текущий список избранного пользователя
@@ -771,41 +759,11 @@ class ProductsModel extends ListModel
                 $item->images = json_decode($item->images);
             }
 
-            $item->delivery = json_decode($item->delivery, true);
-            $item->delivery_date = '';
-
-            if (!empty($item->delivery[$active_zone])) {
-                $item->delivery_date = $item->delivery[$active_zone];
-
-                try {
-                    $date = new DateTime($item->delivery[$active_zone]);
-
-                    if ($date->format('Y-m-d') == $today->format('Y-m-d')) {
-                        $item->delivery = Text::_('DATE_FORMAT_TODAY');
-                    } elseif ($date->format('Y-m-d') == $tomorrow->format('Y-m-d')) {
-                        $item->delivery = Text::_('DATE_FORMAT_TOMORROW');
-                    } elseif ($date->format('Y-m-d') == $day_after->format('Y-m-d')) {
-                        $item->delivery = Text::_('DATE_FORMAT_DAY_AFTER');
-                    } elseif ($date < $today) {
-                        $item->delivery = Text::_('COM_ISHOP_ADD_TO_CART');
-                    } else {
-                        // Любая другая будущая дата
-                        $item->delivery = HTMLHelper::_('date', $date->format('Y-m-d'), Text::_('DATE_FORMAT_FUTURE'));
-                    }
-                } catch (\Exception $e) {
-                    // Обработка невалидных дат
-                    $item->delivery = Text::_('COM_ISHOP_ADD_TO_CART');
-                }
-            } else {
-                $item->delivery = Text::_('COM_ISHOP_ADD_TO_CART');
-            }
+            // Устанавливаем данные текущей зоны доставки
+            ProductHelper::setDeliveryZone($item);
 
             // Доступность товара для заказа
-            if ($item->stock > 0 || $item->stock === -1 ) {
-                $item->available = true;
-            } else {
-                $item->available = false;
-            }
+            ProductHelper::setAvailableState($item);
 
             // Полное наименование товара
             $item->fullname = $item->prefix . ' ' . $item->manufacturer_title . ' ' . $item->title;

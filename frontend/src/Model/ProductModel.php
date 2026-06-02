@@ -11,12 +11,10 @@ namespace Ilange\Component\Ishop\Site\Model;
 
 defined('_JEXEC') or die;
 
-use DateTime;
 use Ilange\Component\Ishop\Site\Helper\PriceHelper;
 use Ilange\Component\Ishop\Site\Helper\ProductHelper;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
-use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Multilanguage;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Model\ItemModel;
@@ -388,10 +386,10 @@ class ProductModel extends ItemModel
                 $this->setInLists($data);
 
                 // Устанавливаем данные текущей зоны доставки
-                $this->setDeliveryZone($data);
+                ProductHelper::setDeliveryZone($data);
 
                 // Устанавливаем доступность товара для заказа
-                $this->setAvailableState($data);
+                ProductHelper::setAvailableState($data);
 
                 // Устанавливаем параметры оплаты частями
                 $this->setPaymentsPart($data);
@@ -631,73 +629,6 @@ class ProductModel extends ItemModel
         unset($cart);
         unset($wishlist);
         unset($compare);
-    }
-
-    /**
-     * Устанавливает данные текущей зоны доставки
-     *
-     * @param   object  $data  Данные товара
-     *
-     * @return void
-     * @throws \Exception
-     * @since 1.0.0
-     */
-    private function setDeliveryZone(object $data)
-    {
-        // Текущая зона доставки
-        $zonesModule = $this->getMVCFactory()->createModel('Zones', 'Site');
-        $active_zone = $zonesModule->getActive();
-        $data->active_zone = $zonesModule->getZone();
-
-        // Текущая дата
-        $today = new DateTime();
-        // Завтра
-        $tomorrow = (clone $today)->modify('+1 day');
-        // Послезавтра
-        $day_after = (clone $today)->modify('+2 day');
-        $data->delivery = json_decode($data->delivery, true);
-        if (!empty($data->delivery[$active_zone])) {
-            try {
-                $date = new DateTime($data->delivery[$active_zone]);
-
-                if ($date->format('Y-m-d') == $today->format('Y-m-d')) {
-                    $data->delivery = Text::_('DATE_FORMAT_TODAY');
-                } elseif ($date->format('Y-m-d') == $tomorrow->format('Y-m-d')) {
-                    $data->delivery = Text::_('DATE_FORMAT_TOMORROW');
-                } elseif ($date->format('Y-m-d') == $day_after->format('Y-m-d')) {
-                    $data->delivery = Text::_('DATE_FORMAT_DAY_AFTER');
-                } elseif ($date < $today) {
-                    $data->delivery = Text::_('COM_ISHOP_ADD_TO_CART');
-                } else {
-                    // Любая другая будущая дата
-                    $data->delivery = HTMLHelper::_('date', $date->format('Y-m-d'), Text::_('DATE_FORMAT_FUTURE'));
-                }
-            } catch (\Exception $e) {
-                // Обработка невалидных дат
-                $data->delivery = Text::_('COM_ISHOP_ADD_TO_CART');
-            }
-        } else {
-            $data->delivery = Text::_('COM_ISHOP_ADD_TO_CART');
-        }
-    }
-
-    /**
-     * Устанавливает доступность товара дял заказа
-     *
-     * @param   object  $data  Данные товара
-     *
-     * @return void
-     * @throws \Exception
-     * @since 1.0.0
-     */
-    private function setAvailableState(object $data)
-    {
-        // Доступность товара для заказа
-        if ($data->stock > 0 || $data->stock === -1 ) {
-            $data->available = true;
-        } else {
-            $data->available = false;
-        }
     }
 
     /**
