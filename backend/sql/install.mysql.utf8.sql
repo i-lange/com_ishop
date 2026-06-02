@@ -715,7 +715,8 @@ CREATE TABLE IF NOT EXISTS `#__ishop_warehouses_stock`
     `stock`            int unsigned                                           NOT NULL                  COMMENT 'Количество товара на складе',
     PRIMARY KEY (`id`),
     KEY `idx_product_id` (`product_id`),
-    KEY `idx_warehouse_id` (`warehouse_id`)
+    KEY `idx_warehouse_id` (`warehouse_id`),
+    KEY `idx_product_stock_warehouse` (`product_id`, `stock`, `warehouse_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   DEFAULT COLLATE = utf8mb4_unicode_ci COMMENT ='Хранение данные об остатках товаров на складах iShop';
@@ -733,7 +734,8 @@ CREATE TABLE IF NOT EXISTS `#__ishop_suppliers_stock`
     `price`            decimal(10, 2) unsigned                                NOT NULL DEFAULT 0        COMMENT 'Цена закупки',
     PRIMARY KEY (`id`),
     KEY `idx_product_id` (`product_id`),
-    KEY `idx_supplier_id` (`supplier_id`)
+    KEY `idx_supplier_id` (`supplier_id`),
+    KEY `idx_product_stock_supplier` (`product_id`, `stock`, `supplier_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   DEFAULT COLLATE = utf8mb4_unicode_ci COMMENT ='Хранение данные об остатках товаров у поставщиков iShop';
