@@ -14,6 +14,8 @@ use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
+use Joomla\Database\DatabaseInterface;
+use Joomla\Database\ParameterType;
 use stdClass;
 
 defined('_JEXEC') or die;
@@ -40,16 +42,208 @@ class ProductHelper
     }
 
     /**
-     * Устанавливает флаг доступности товара для заказа.
+     * Устанавливает флаг доступности товара для заказа с учетом текущей зоны доставки.
+     *
+     * Проверка идет от наиболее точных источников наличия к общему остатку товара:
+     * сначала учитываются склады, обслуживающие активную зону доставки, затем поставщики,
+     * обслуживающие эту зону, и только после этого используется общий остаток в поле stock.
      *
      * @param   object  $data  Данные товара
      *
      * @return  void
+     * @throws \Exception
      * @since   1.0.0
      */
     public static function setAvailableState(object $data): void
     {
+        $data->available = false;
+
+        $productId = (int) ($data->id ?? 0);
+        $zoneId    = (int) ($data->active_zone->id ?? 0);
+
+        // Без идентификатора товара нельзя проверить специализированные таблицы остатков.
+        // В этом сценарии сохраняем прежнее поведение: доступность определяется общим stock.
+        if ($productId <= 0 || $zoneId <= 0) {
+            $data->available = self::isAvailableForOrder($data->stock ?? 0);
+
+            return;
+        }
+
+        $deliveryRules = self::getZoneDeliveryRules($zoneId);
+
+        if (!$deliveryRules['loaded']) {
+            $data->available = self::isAvailableForOrder($data->stock ?? 0);
+
+            return;
+        }
+
+        // Пустой список складов в настройках зоны означает, что зона обслуживается любым складом.
+        if (self::hasWarehouseStock($productId, $deliveryRules['warehouses'])) {
+            $data->available = true;
+
+            return;
+        }
+
+        // Пустой список поставщиков в настройках зоны означает, что зона обслуживается любым поставщиком.
+        if (self::hasSupplierStock($productId, $deliveryRules['suppliers'])) {
+            $data->available = true;
+
+            return;
+        }
+
         $data->available = self::isAvailableForOrder($data->stock ?? 0);
+    }
+
+    /**
+     * Возвращает настройки складов и поставщиков, обслуживающих зону доставки.
+     *
+     * Данные зоны кэшируются на время текущего запроса, потому что setAvailableState()
+     * вызывается для каждого товара в списках, корзине и карточке товара. Это позволяет
+     * не загружать одну и ту же запись зоны повторно для каждого товара.
+     *
+     * @param   int  $zoneId  ID зоны доставки
+     *
+     * @return  array{loaded: bool, warehouses: array<int, int>, suppliers: array<int, int>}
+     * @throws \Exception
+     * @since   1.0.0
+     */
+    private static function getZoneDeliveryRules(int $zoneId): array
+    {
+        static $cache = [];
+
+        if (isset($cache[$zoneId])) {
+            return $cache[$zoneId];
+        }
+
+        $cache[$zoneId] = [
+            'loaded'     => false,
+            'warehouses' => [],
+            'suppliers'  => [],
+        ];
+
+        $model = Factory::getApplication()
+            ->bootComponent('com_ishop')
+            ->getMVCFactory()
+            ->createModel('Zone', 'Administrator');
+
+        $zone = $model->getItem($zoneId);
+
+        if (!$zone) {
+            return $cache[$zoneId];
+        }
+
+        $cache[$zoneId]['loaded'] = true;
+
+        if (empty($zone->attribs) || !is_array($zone->attribs)) {
+            return $cache[$zoneId];
+        }
+
+        $cache[$zoneId]['warehouses'] = self::normalizeDeliveryRows(
+            $zone->attribs['warehouses_delivery'] ?? [],
+            'warehouse'
+        );
+        $cache[$zoneId]['suppliers'] = self::normalizeDeliveryRows(
+            $zone->attribs['suppliers_delivery'] ?? [],
+            'supplier'
+        );
+
+        return $cache[$zoneId];
+    }
+
+    /**
+     * Преобразует строки repeatable-subform зоны доставки в массив ID => days.
+     *
+     * В настройках зоны repeatable-subform хранит набор строк с ID склада/поставщика
+     * и количеством дней доставки. Для проверки наличия важны только реальные ID:
+     * значения 0/null/пустые строки отбрасываются, чтобы пустая настройка зоны означала
+     * "без ограничения по складам/поставщикам".
+     *
+     * @param   array   $rows   Строки subform из attribs зоны
+     * @param   string  $idKey  Имя поля с ID: warehouse или supplier
+     *
+     * @return  array<int, int> Массив ID => days
+     * @since   1.0.0
+     */
+    private static function normalizeDeliveryRows(array $rows, string $idKey): array
+    {
+        $result = [];
+
+        foreach ($rows as $row) {
+            $row = (array) $row;
+            $id  = (int) ($row[$idKey] ?? 0);
+
+            if ($id <= 0) {
+                continue;
+            }
+
+            $result[$id] = (int) ($row['days'] ?? 0);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Проверяет наличие товара на складах, обслуживающих текущую зону доставки.
+     *
+     * Если список складов пустой, ограничение по складам не добавляется: это соответствует
+     * правилу, что зона доставки обслуживается любым складом.
+     *
+     * @param   int         $productId     ID товара
+     * @param   array<int>  $warehouseIds  ID складов, обслуживающих зону
+     *
+     * @return  bool
+     * @since   1.0.0
+     */
+    private static function hasWarehouseStock(int $productId, array $warehouseIds): bool
+    {
+        $db    = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->getQuery(true)
+            ->select('1')
+            ->from($db->quoteName('#__ishop_warehouses_stock'))
+            ->where($db->quoteName('product_id') . ' = :product_id')
+            ->where($db->quoteName('stock') . ' > 0')
+            ->bind(':product_id', $productId, ParameterType::INTEGER);
+
+        if (!empty($warehouseIds)) {
+            $warehouseIds = array_keys($warehouseIds);
+            $query->whereIn($db->quoteName('warehouse_id'), $warehouseIds, ParameterType::INTEGER);
+        }
+
+        $db->setQuery($query, 0, 1);
+
+        return (bool) $db->loadResult();
+    }
+
+    /**
+     * Проверяет наличие товара у поставщиков, обслуживающих текущую зону доставки.
+     *
+     * Если список поставщиков пустой, ограничение по поставщикам не добавляется: это
+     * соответствует правилу, что зона доставки обслуживается любым поставщиком.
+     *
+     * @param   int         $productId    ID товара
+     * @param   array<int>  $supplierIds  ID поставщиков, обслуживающих зону
+     *
+     * @return  bool
+     * @since   1.0.0
+     */
+    private static function hasSupplierStock(int $productId, array $supplierIds): bool
+    {
+        $db    = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->getQuery(true)
+            ->select('1')
+            ->from($db->quoteName('#__ishop_suppliers_stock'))
+            ->where($db->quoteName('product_id') . ' = :product_id')
+            ->where($db->quoteName('stock') . ' > 0')
+            ->bind(':product_id', $productId, ParameterType::INTEGER);
+
+        if (!empty($supplierIds)) {
+            $supplierIds = array_keys($supplierIds);
+            $query->whereIn($db->quoteName('supplier_id'), $supplierIds, ParameterType::INTEGER);
+        }
+
+        $db->setQuery($query, 0, 1);
+
+        return (bool) $db->loadResult();
     }
 
     /**
