@@ -395,7 +395,7 @@ class FilterRules implements RulesInterface
         }
         unset($query['ishop_fields']);
 
-        unset($query['filter_route'], $query['limitstart']);
+        unset($query['filter_route']);
 
         return $segments;
     }
