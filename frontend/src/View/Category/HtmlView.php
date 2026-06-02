@@ -11,6 +11,7 @@ namespace Ilange\Component\Ishop\Site\View\Category;
 
 defined('_JEXEC') or die;
 
+use Ilange\Component\Ishop\Site\Service\FilterRules;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Helper\TagsHelper;
 use Joomla\CMS\Language\Text;
@@ -62,6 +63,7 @@ class HtmlView extends CategoryView
 
         // Флаг указывает не добавлять limitstart=0 к URL адресу
         $this->pagination->hideEmptyLimitstart = true;
+        $this->applyFilterPaginationRoute();
 
         // Поскольку приложение устанавливает заголовок страницы по умолчанию,
         // мы должны получить его из самого пункта меню
@@ -107,6 +109,40 @@ class HtmlView extends CategoryView
         }
 
         parent::display($tpl);
+    }
+
+    /**
+     * Добавляет активные SEO-фильтры в ссылки пагинации категории.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    private function applyFilterPaginationRoute(): void
+    {
+        if (empty($this->pagination) || empty($this->state) || !(bool) $this->state->get('filter.route', false)) {
+            return;
+        }
+
+        $filters = FilterRules::normalizeFilterInput([
+            'min_price'     => $this->state->get('filter.min_price', 0),
+            'max_price'     => $this->state->get('filter.max_price', 0),
+            'good_price'    => $this->state->get('filter.good_price', 0),
+            'min_width'     => $this->state->get('filter.min_width', 0),
+            'max_width'     => $this->state->get('filter.max_width', 0),
+            'min_height'    => $this->state->get('filter.min_height', 0),
+            'max_height'    => $this->state->get('filter.max_height', 0),
+            'min_depth'     => $this->state->get('filter.min_depth', 0),
+            'max_depth'     => $this->state->get('filter.max_depth', 0),
+            'min_weight'    => $this->state->get('filter.min_weight', 0),
+            'max_weight'    => $this->state->get('filter.max_weight', 0),
+            'manufacturers' => $this->state->get('filter.manufacturers', []),
+            'warehouses'    => $this->state->get('filter.warehouses', []),
+            'ishop_fields'  => $this->state->get('filter.ishop_fields', []),
+        ]);
+
+        foreach ($filters as $key => $value) {
+            $this->pagination->setAdditionalUrlParam($key, $value);
+        }
     }
 
     /**
