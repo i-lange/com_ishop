@@ -7,7 +7,7 @@
     <license>GNU General Public License version 2 or later</license>
     <authorEmail>pavel@ilange.ru</authorEmail>
     <authorUrl>https://ilange.ru/en/contact</authorUrl>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <description>COM_ISHOP_XML_DESCRIPTION</description>
     <namespace path="src">Ilange\Component\Ishop</namespace>
     <scriptfile>script.php</scriptfile>
@@ -54,6 +54,7 @@
             <menu link="option=com_ishop&amp;view=suppliers">COM_ISHOP_SUPPLIERS</menu>
             <menu link="option=com_ishop&amp;view=services">COM_ISHOP_SERVICES</menu>
             <menu link="option=com_ishop&amp;view=fields">COM_ISHOP_FIELDS</menu>
+            <menu link="option=com_ishop&amp;view=filters">COM_ISHOP_FILTERS</menu>
             <menu link="option=com_ishop&amp;view=warehouses">COM_ISHOP_WAREHOUSES</menu>
             <menu link="option=com_ishop&amp;view=zones">COM_ISHOP_ZONES</menu>
             <menu link="option=com_ishop&amp;view=payments">COM_ISHOP_PAYMENTS</menu>

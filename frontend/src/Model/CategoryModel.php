@@ -21,6 +21,7 @@ use Joomla\Component\Content\Site\Helper\QueryHelper;
 use Joomla\Database\ParameterType;
 use Joomla\Utilities\ArrayHelper;
 use Ilange\Component\Ishop\Site\Service\FilterRules;
+use Ilange\Component\Ishop\Site\Service\FilterSeoKey;
 use RuntimeException;
 use stdClass;
 
@@ -65,6 +66,17 @@ class CategoryModel extends ListModel
      * @since 1.0.0
      */
     protected $_filter_object = null;
+
+    /**
+     * SEO-настройки страницы, совпавшие с текущим состоянием фильтра.
+     *
+     * Значение кешируется в рамках запроса: `null` означает, что поиск еще не
+     * выполнялся, `false` - подходящая запись в `#__ishop_filters` не найдена.
+     *
+     * @var object|false|null
+     * @since 1.0.0
+     */
+    protected $_filter_seo_page = null;
 
     /**
      * Категория слева и справа от этой
@@ -709,6 +721,84 @@ class CategoryModel extends ListModel
         }
 
         return $this->_filter_object;
+    }
+
+    /**
+     * Возвращает SEO-настройки страницы фильтра для текущей категории.
+     *
+     * Метод собирает активные параметры фильтра, строит канонический ключ через
+     * `FilterSeoKey` и ищет опубликованную запись в `#__ishop_filters` с учетом
+     * текущего языка Joomla и fallback-языка `*`. Если найдено несколько
+     * записей, используется первая по `ordering`.
+     *
+     * @return object|false
+     *
+     * @throws \Exception
+     * @since 1.0.0
+     */
+    public function getFilterSeoPage()
+    {
+        if ($this->_filter_seo_page !== null) {
+            return $this->_filter_seo_page;
+        }
+
+        $category = $this->getCategory();
+
+        if (!$category) {
+            $this->_filter_seo_page = false;
+
+            return $this->_filter_seo_page;
+        }
+
+        $filters = [
+            'category_id'    => (int) $category->id,
+            'manufacturers'  => $this->getState('filter.manufacturers', []),
+            'ishop_fields'   => $this->getState('filter.ishop_fields', []),
+            'min_width'      => $this->getState('filter.min_width', 0),
+            'max_width'      => $this->getState('filter.max_width', 0),
+            'min_height'     => $this->getState('filter.min_height', 0),
+            'max_height'     => $this->getState('filter.max_height', 0),
+            'min_depth'      => $this->getState('filter.min_depth', 0),
+            'max_depth'      => $this->getState('filter.max_depth', 0),
+            'min_weight'     => $this->getState('filter.min_weight', 0),
+            'max_weight'     => $this->getState('filter.max_weight', 0),
+        ];
+
+        $filterKey = FilterSeoKey::build($filters);
+        $language = Factory::getApplication()->getLanguage()->getTag();
+        $published = 1;
+
+        $db = $this->getDatabase();
+        $query = $db->getQuery(true)
+            ->select([
+                $db->quoteName('id'),
+                $db->quoteName('category_id'),
+                $db->quoteName('description'),
+                $db->quoteName('metatitle'),
+                $db->quoteName('metadesc'),
+                $db->quoteName('metakey'),
+                $db->quoteName('language'),
+            ])
+            ->from($db->quoteName('#__ishop_filters'))
+            ->where($db->quoteName('category_id') . ' = :category_id')
+            ->where($db->quoteName('filter_key') . ' = :filter_key')
+            ->where($db->quoteName('state') . ' = :state')
+            ->where(
+                '(' . $db->quoteName('language') . ' = :language OR ' .
+                $db->quoteName('language') . ' = ' . $db->quote('*') . ')'
+            )
+            ->order(
+                'CASE WHEN ' . $db->quoteName('language') . ' = ' . $db->quote($language) .
+                ' THEN 0 ELSE 1 END ASC, ' . $db->quoteName('ordering') . ' ASC'
+            )
+            ->bind(':category_id', $filters['category_id'], ParameterType::INTEGER)
+            ->bind(':filter_key', $filterKey)
+            ->bind(':language', $language)
+            ->bind(':state', $published, ParameterType::INTEGER);
+
+        $this->_filter_seo_page = $db->setQuery($query, 0, 1)->loadObject() ?: false;
+
+        return $this->_filter_seo_page;
     }
 
     /**

@@ -60,6 +60,7 @@ class HtmlView extends CategoryView
 
         $app = Factory::getApplication();
         $this->filter_object = $this->get('FilterObject');
+        $this->filter_seo_page = $this->get('FilterSeoPage');
 
         // Флаг указывает не добавлять limitstart=0 к URL адресу
         $this->pagination->hideEmptyLimitstart = true;
@@ -77,15 +78,24 @@ class HtmlView extends CategoryView
             $this->params->set('page_title', $title);
         }
 
-        if (empty($title)) {
+        if (!empty($this->filter_seo_page->metatitle)) {
+            $title = $this->filter_seo_page->metatitle;
+            $this->params->set('page_title', $title);
+        } elseif (empty($title)) {
             $title = $this->category->title;
         }
         $this->setDocumentTitle($title);
 
-        if ($this->category->metadesc) {
+        if (!empty($this->filter_seo_page->metadesc)) {
+            $this->getDocument()->setDescription($this->filter_seo_page->metadesc);
+        } elseif ($this->category->metadesc) {
             $this->getDocument()->setDescription($this->category->metadesc);
         } elseif ($this->params->get('menu-meta_description')) {
             $this->getDocument()->setDescription($this->params->get('menu-meta_description'));
+        }
+
+        if (!empty($this->filter_seo_page->metakey)) {
+            $this->getDocument()->setMetaData('keywords', $this->filter_seo_page->metakey);
         }
 
         if ($this->params->get('robots')) {
@@ -103,6 +113,10 @@ class HtmlView extends CategoryView
         $mdata = $this->category->metadata->toArray();
 
         foreach ($mdata as $k => $v) {
+            if (!empty($this->filter_seo_page->metakey) && $k === 'keywords') {
+                continue;
+            }
+
             if ($v) {
                 $this->getDocument()->setMetaData($k, $v);
             }

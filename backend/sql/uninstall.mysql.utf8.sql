@@ -24,3 +24,4 @@ DROP TABLE IF EXISTS `#__ishop_reviews`;
 DROP TABLE IF EXISTS `#__ishop_orders`;
 DROP TABLE IF EXISTS `#__ishop_discounts`;
 DROP TABLE IF EXISTS `#__ishop_prefixes`;
+DROP TABLE IF EXISTS `#__ishop_filters`;

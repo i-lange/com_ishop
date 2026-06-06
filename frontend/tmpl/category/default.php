@@ -93,10 +93,15 @@ $showFilter = (!empty(ModuleHelper::getModules('filter')));
     <?php endif; ?>
 </div>
 
-<?php if ($this->params->get('show_description', 1) && $this->category->description) : ?>
+<?php
+$filterSeoDescription = !empty($this->filter_seo_page->description) ? $this->filter_seo_page->description : '';
+$categoryDescription = $filterSeoDescription ?: $this->category->description;
+$showCategoryDescription = $filterSeoDescription || $this->params->get('show_description', 1);
+?>
+<?php if ($showCategoryDescription && $categoryDescription) : ?>
 <div class="bg-grey py-5">
     <div class="container">
-        <?php echo HTMLHelper::_('content.prepare', $this->category->description, '', 'com_ishop.category'); ?>
+        <?php echo HTMLHelper::_('content.prepare', $categoryDescription, '', 'com_ishop.category'); ?>
     </div>
 </div>
 <?php endif; ?>
