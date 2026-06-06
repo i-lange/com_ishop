@@ -68,7 +68,7 @@ if ($saveOrder && !empty($this->items)) {
                                     <?php echo HTMLHelper::_('searchtools.sort', 'JCATEGORY', 'category_title', $listDirn, $listOrder); ?>
                                 </th>
                                 <th scope="col" class="d-none d-lg-table-cell">
-                                    <?php echo HTMLHelper::_('searchtools.sort', 'COM_ISHOP_FIELD_META_TITLE', 'a.metatitle', $listDirn, $listOrder); ?>
+                                    <?php echo HTMLHelper::_('searchtools.sort', 'COM_ISHOP_FIELD_HEADING', 'a.heading', $listDirn, $listOrder); ?>
                                 </th>
                                 <th scope="col" class="w-10 d-none d-md-table-cell">
                                     <?php echo HTMLHelper::_('searchtools.sort', 'JAUTHOR', 'a.created_by', $listDirn, $listOrder); ?>
@@ -140,7 +140,7 @@ if ($saveOrder && !empty($this->items)) {
                                     </div>
                                 </th>
                                 <td class="small d-none d-lg-table-cell">
-                                    <?php echo $this->escape($item->metatitle); ?>
+                                    <?php echo $this->escape($item->heading); ?>
                                 </td>
                                 <td class="small d-none d-md-table-cell">
                                     <?php if ((int) $item->created_by != 0) : ?>

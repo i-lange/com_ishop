@@ -793,6 +793,7 @@ CREATE TABLE IF NOT EXISTS `#__ishop_filters` (
     `min_weight`       int unsigned                                           NOT NULL DEFAULT 0          COMMENT 'Минимальный вес',
     `max_weight`       int unsigned                                           NOT NULL DEFAULT 0          COMMENT 'Максимальный вес',
     `filter_key`       char(64)                                               NOT NULL                    COMMENT 'Канонический ключ комбинации фильтра',
+    `heading`          varchar(255)                                           NOT NULL DEFAULT ''         COMMENT 'Заголовок страницы',
     `description`      mediumtext                                             NOT NULL                    COMMENT 'HTML описание страницы',
     `metatitle`        varchar(255)                                           NOT NULL DEFAULT ''         COMMENT 'Meta title страницы',
     `metadesc`         text                                                   NOT NULL                    COMMENT 'Meta description страницы',

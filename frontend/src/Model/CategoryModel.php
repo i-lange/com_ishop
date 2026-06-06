@@ -773,6 +773,7 @@ class CategoryModel extends ListModel
             ->select([
                 $db->quoteName('id'),
                 $db->quoteName('category_id'),
+                $db->quoteName('heading'),
                 $db->quoteName('description'),
                 $db->quoteName('metatitle'),
                 $db->quoteName('metadesc'),

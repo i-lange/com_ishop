@@ -78,6 +78,10 @@ class HtmlView extends CategoryView
             $this->params->set('page_title', $title);
         }
 
+        if (!empty($this->filter_seo_page->heading)) {
+            $this->params->set('page_heading', $this->filter_seo_page->heading);
+        }
+
         if (!empty($this->filter_seo_page->metatitle)) {
             $title = $this->filter_seo_page->metatitle;
             $this->params->set('page_title', $title);

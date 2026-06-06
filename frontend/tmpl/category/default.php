@@ -22,6 +22,7 @@ $fullOrdering = $ordering . ' ' . $direction;
 $text = ltrim($ordering, 'a.') . '_' . $direction;
 $orderingList = $this->params->get('category_ordering', []);
 $showFilter = (!empty(ModuleHelper::getModules('filter')));
+$categoryTitle = !empty($this->filter_seo_page->heading) ? $this->filter_seo_page->heading : $this->category->title;
 ?>
 <div class="module-category">
 <div class="container">
@@ -30,7 +31,7 @@ $showFilter = (!empty(ModuleHelper::getModules('filter')));
     <?php endif; ?>
 
     <?php if ($this->params->get('show_category_title')) : ?>
-        <h2><?php echo $this->category->title; ?> <span class="category-products-count">(<?php echo $this->pagination->total; ?>)</span></h2>
+        <h2><?php echo $this->escape($categoryTitle); ?> <span class="category-products-count">(<?php echo $this->pagination->total; ?>)</span></h2>
     <?php endif; ?>
 
     <?php if ($this->maxLevel != 0 && $this->get('children')) : ?>

@@ -42,6 +42,8 @@
             <option value="a.state DESC">JSTATUS_DESC</option>
             <option value="category_title ASC">JCATEGORY_ASC</option>
             <option value="category_title DESC">JCATEGORY_DESC</option>
+            <option value="a.heading ASC">COM_ISHOP_FIELD_HEADING_ASC</option>
+            <option value="a.heading DESC">COM_ISHOP_FIELD_HEADING_DESC</option>
             <option value="a.created_by ASC">JAUTHOR_ASC</option>
             <option value="a.created_by DESC">JAUTHOR_DESC</option>
             <option value="language ASC" requires="multilanguage">JGRID_HEADING_LANGUAGE_ASC</option>

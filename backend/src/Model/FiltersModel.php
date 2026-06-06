@@ -44,6 +44,7 @@ class FiltersModel extends ListModel
                 'id', 'a.id',
                 'category_id', 'a.category_id',
                 'category_title',
+                'heading', 'a.heading',
                 'state', 'a.state',
                 'created', 'a.created',
                 'created_by', 'a.created_by',
@@ -140,6 +141,7 @@ class FiltersModel extends ListModel
                     $db->quoteName('a.category_id'),
                     $db->quoteName('a.manufacturers'),
                     $db->quoteName('a.ishop_fields'),
+                    $db->quoteName('a.heading'),
                     $db->quoteName('a.metatitle'),
                     $db->quoteName('a.metadesc'),
                     $db->quoteName('a.metakey'),
@@ -222,8 +224,9 @@ class FiltersModel extends ListModel
                 $query
                     ->where('(' . $db->quoteName('a.metatitle') . ' LIKE :search1 OR ' .
                         $db->quoteName('a.metadesc') . ' LIKE :search2 OR ' .
-                        $db->quoteName('category.title') . ' LIKE :search3)')
-                    ->bind([':search1', ':search2', ':search3'], $search);
+                        $db->quoteName('a.heading') . ' LIKE :search3 OR ' .
+                        $db->quoteName('category.title') . ' LIKE :search4)')
+                    ->bind([':search1', ':search2', ':search3', ':search4'], $search);
             }
         }
 
