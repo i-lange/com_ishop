@@ -55,17 +55,22 @@ Production-ready сайт для проверки: `magazin-gefest-new.local`.
 - `backend/services/provider.php` - DI/service provider, регистрация MVC, роутера, категорий, ассоциаций.
 - `backend/src/Extension/IshopComponent.php` - класс компонента.
 - `backend/src/Model`, `backend/src/Table`, `backend/src/View`, `backend/src/Controller`, `backend/tmpl`, `backend/forms` - стандартные слои Joomla MVC для админки.
+- `backend/src/Controller/FilterController.php`, `backend/src/Controller/FiltersController.php`, `backend/src/Model/FilterModel.php`, `backend/src/Model/FiltersModel.php`, `backend/src/Table/FilterTable.php`, `backend/src/View/Filter`, `backend/src/View/Filters`, `backend/forms/filter.xml`, `backend/forms/filter_filters.xml`, `backend/tmpl/filter`, `backend/tmpl/filters` - административный CRUD SEO-страниц результатов фильтрации товаров.
+- `backend/src/Service/FilterSeoKey.php` - нормализация условий SEO-фильтра и построение канонического ключа для сохранения и проверки дублей в `#__ishop_filters`.
+- `backend/src/Field/FilterFieldsField.php` - кастомное поле формы для выбора характеристик SEO-страницы фильтра с учетом выбранной категории.
 - `frontend/` - клиентская часть компонента.
 - `frontend/src/Service/Router.php` - основной RouterView-роутер компонента.
 - `frontend/src/Service/FilterRules.php` - кастомные правила ЧПУ для результатов фильтрации категории.
+- `frontend/src/Service/FilterSeoKey.php` - фронтенд-версия нормализации условий SEO-фильтра; должна оставаться совместимой с backend-версией.
 - `frontend/src/Controller/FilterController.php` - JSON endpoints `filter.preview` и `filter.reset` для AJAX-фильтра.
 - `frontend/src/Service/Category.php` - Categories-сервис для дерева категорий товаров.
 - `frontend/src/Helper/RouteHelper.php` - генерация внутренних ссылок компонента.
-- `frontend/src/Model/CategoryModel.php` - модель страницы категории, состояние фильтра, объект фильтра и делегирование списка товаров в `ProductsModel`.
+- `frontend/src/Model/CategoryModel.php` - модель страницы категории, состояние фильтра, объект фильтра, поиск SEO-записи фильтра и делегирование списка товаров в `ProductsModel`.
 - `frontend/src/Model/ProductsModel.php` - основной SQL-запрос товаров и применение фильтров.
-- `frontend/src/View/Category/HtmlView.php` и `frontend/tmpl/category/` - вывод категории, товаров, сортировки и кнопки фильтра.
+- `frontend/src/View/Category/HtmlView.php` и `frontend/tmpl/category/` - вывод категории, товаров, сортировки, кнопки фильтра, SEO-описания и meta для совпавшей страницы фильтра.
 - `media/scss` - исходники CSS.
 - `media/js/*.js` - исходные JS entrypoints.
+- `media/js/admin-filter.js` - исходный JS для административной формы SEO-страницы фильтра; динамически обновляет блок характеристик при выборе категории.
 - `media/css`, `media/js/*.min.js`, `*.gz` - сгенерированные ассеты, не править вручную, если изменение должно идти через сборку.
 - `media/joomla.asset.json` - декларации Joomla Web Asset Manager.
 - `backend/sql/install.mysql.utf8.sql`, `backend/sql/updates/mysql` - схема БД и обновления.
@@ -85,7 +90,21 @@ Production-ready сайт для проверки: `magazin-gefest-new.local`.
 6. `CategoryModel::getItems()` создает `ProductsModel` с `ignore_request => true` и вручную передает туда все `filter.*` state.
 7. `frontend/src/Model/ProductsModel.php::getListQuery()` применяет фильтры к SQL.
 8. `CategoryModel::getFilterObject()` собирает начальные данные для модуля фильтра и счетчик активных фильтров.
-9. `frontend/src/Service/Router.php` регистрирует `FilterRules` после `MenuRules`, `StandardRules`, `NomenuRules`.
+9. `CategoryModel::getFilterSeoPage()` строит ключ текущей комбинации через `frontend/src/Service/FilterSeoKey.php` и ищет опубликованную запись в `#__ishop_filters`.
+10. `frontend/src/View/Category/HtmlView.php` подставляет `metatitle`, `metadesc`, `metakey` совпавшей SEO-записи вместо стандартных meta категории, а шаблон категории выводит `description` SEO-записи вместо стандартного описания категории.
+11. `frontend/src/Service/Router.php` регистрирует `FilterRules` после `MenuRules`, `StandardRules`, `NomenuRules`.
+
+SEO-страницы результатов фильтрации:
+
+- Данные SEO-страниц фильтра хранятся в `#__ishop_filters`. Таблица содержит условия фильтра, HTML-описание, `metatitle`, `metadesc`, `metakey`, системные поля `state`, `created`, `created_by`, `created_by_alias`, `modified`, `modified_by`, `checked_out`, `checked_out_time`, `ordering`, `language`.
+- Условия SEO-страницы включают `category_id`, производителей (`manufacturers`), характеристики (`ishop_fields`), габариты (`min_width`, `max_width`, `min_height`, `max_height`, `min_depth`, `max_depth`) и вес (`min_weight`, `max_weight`). Склад (`warehouses`) сейчас участвует в ЧПУ/товарном фильтре, но не хранится в `#__ishop_filters`; если потребуется SEO по складам, нужно синхронно добавить колонку/форму/ключ/поиск.
+- Для числовых характеристик и диапазонов габаритов/веса хранится точная пара `min`/`max`; `0` означает незаданную границу.
+- Для списочных характеристик в `ishop_fields` хранятся массивы ID значений, для булевых - `1`, для числовых - объект с `min` и `max`.
+- `filter_key` - канонический ключ условий без `category_id`; категория проверяется отдельной колонкой. Ключ строится через `FilterSeoKey::build()` и используется для поиска совпадения на фронтенде и проверки дублей в админке.
+- Backend и frontend версии `FilterSeoKey` должны оставаться логически идентичными. При изменении формата ключа, нормализации производителей, характеристик или диапазонов меняйте оба файла и проверяйте существующие записи `#__ishop_filters`.
+- Если найдено несколько опубликованных SEO-записей с одинаковыми условиями, фронтенд берет первую по `ordering`, но `FilterTable::store()` должен не допускать дублей по `category_id + filter_key + language`.
+- Язык учитывается при поиске: запись с текущим языком Joomla имеет приоритет над `*`; обе записи сортируются затем по `ordering`.
+- SEO-описание и meta совпавшей записи должны заменять стандартные описание и метаданные категории, а не дополнять их. Если SEO-запись не найдена, категория работает по прежней логике.
 
 Практические правила для ЧПУ фильтра:
 
@@ -102,12 +121,14 @@ Production-ready сайт для проверки: `magazin-gefest-new.local`.
 - Не смешивайте `manufacturer_id` и `manufacturers[]` без явного решения. Список производителей из фильтра идет через state `filter.manufacturers`; одиночный производитель идет через `filter.manufacturer_id` и применяется только если список пуст.
 - Для характеристик фильтр товаров использует денормализованные таблицы `#__ishop_filter_cat_{categoryId}` и поля `map.field_{fieldId}`. Любой ЧПУ-формат для характеристик должен сохранять `categoryId` и учитывать, что таблица зависит от категории.
 - Неизвестные или невалидные SEO-сегменты должны доходить до штатного 404 Joomla, а не молча игнорироваться.
+- При изменении состава фильтров, влияющих на SEO-страницы, синхронизируйте: схему `#__ishop_filters`, backend form/table/model, `backend/src/Service/FilterSeoKey.php`, `frontend/src/Service/FilterSeoKey.php`, `CategoryModel::getFilterSeoPage()`, шаблоны вывода и языковые файлы.
 - После изменения роутинга проверяйте прямую загрузку URL, AJAX-preview, кнопку submit, reset фильтра, пагинацию, сортировку, canonical/дубли query string и активные значения в `mod_ishop_filter`.
 
 Полезные команды для анализа фильтра:
 
 - `rg -n "FilterRules|FilterController|filter.preview|filter.reset|sefUrl|baseUrl|brand:|sale:|warehouse|manufacturers|ishop_fields|min_price|max_price|good_price" frontend ../mod_ishop_filter`
 - `rg -n "getListQuery|getFilteredItemsId|filter\.manufacturers|filter\.ishop_fields|filter\.warehouse|filter\.min_price" frontend/src/Model frontend/src/Controller`
+- `rg -n "FilterSeoKey|getFilterSeoPage|#__ishop_filters|filter_key|admin-filter|view=filters|task=filter.categoryFields" backend frontend media`
 
 ## Команды
 
@@ -129,6 +150,7 @@ Production-ready сайт для проверки: `magazin-gefest-new.local`.
 - Если добавляете новый JS entrypoint, обновите `JS_ENTRY_FILES` в `vite.config.js.mts` и `media/joomla.asset.json`.
 - Если добавляете новый SCSS entrypoint, обновите `SCSS_ENTRIES` в `vite.config.css.mts` и `media/joomla.asset.json`.
 - Новые assets регистрируйте в `media/joomla.asset.json` с понятными `name`, `type`, `uri`, `attributes`, `dependencies`.
+- Административный asset `com_ishop.admin-filter` должен подключаться через Joomla Web Asset Manager и собираться из `media/js/admin-filter.js`; минифицированные файлы обновляйте только через сборку.
 - В PHP-файлах сохраняйте `defined('_JEXEC') or die;`, namespace Joomla API (`Factory`, `HTMLHelper`, `Text`, `LayoutHelper`, `Route`) и существующий стиль проекта.
 - Экранируйте вывод: `$this->escape()`, `htmlspecialchars()`, `HTMLHelper::cleanImageURL()`, `Text::_()`, явные приведения типов для данных из params/input/model.
 - SQL собирайте через Joomla Database Query API, `quoteName()`, `quote()`, `bind()`, `bindArray()`, `whereIn()` и `ParameterType`, особенно для входных данных фильтра.
@@ -157,6 +179,11 @@ Production-ready сайт для проверки: `magazin-gefest-new.local`.
 - AJAX-preview в `mod_ishop_filter`: счетчик, доступность опций, `sefUrl`, `baseUrl`;
 - submit фильтра по бренду, складу, скидке, цене, габаритам/весу и характеристикам;
 - прямые ЧПУ URL с `brand:alias`, `sale:yes`, `price:min:max`, `warehouse:alias`, `width/height/depth/weight:min:max` и сегментами характеристик;
+- административный список SEO-страниц фильтра `view=filters`: создание, редактирование, публикация, снятие с публикации, ordering, batch, check-in, удаление в корзину и окончательное удаление;
+- форму SEO-страницы фильтра: выбор категории, динамическую подгрузку характеристик, производителей, числовые min/max, булевые и списочные характеристики, габариты/вес, HTML-описание и meta-поля;
+- защиту от дублей SEO-страниц фильтра по одинаковым условиям, категории и языку;
+- подстановку HTML-описания и meta Title/Description/Keywords из `#__ishop_filters` вместо стандартных данных категории при совпадении фильтра;
+- fallback без SEO-записи: категория должна показывать стандартное описание и meta как раньше;
 - категорию с несколькими брендами/складами/значениями list-характеристик, если включен такой сценарий;
 - сортировку и пагинацию после активного фильтра;
 - reset фильтра на базовый URL категории;
