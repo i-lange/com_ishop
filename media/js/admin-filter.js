@@ -110,6 +110,10 @@
     const category = document.getElementById('jform_category_id');
     const container = document.querySelector('[data-filter-fields-container]');
 
+    if (!container && category && options.endpoint) {
+      console.warn('com_ishop.admin-filter: filter fields container is missing. Check the Joomla custom field type registration.');
+    }
+
     if (!category || !container || !options.endpoint) {
       return;
     }

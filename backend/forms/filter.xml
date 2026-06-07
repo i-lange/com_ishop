@@ -35,7 +35,7 @@
                validate="options"
                label="COM_ISHOP_FIELD_MANUFACTURER"/>
         <field name="ishop_fields"
-               type="filterfields"
+               type="filterFields"
                label="COM_ISHOP_FILTER_FIELD_VALUES"
                description="COM_ISHOP_FILTER_FIELD_VALUES_DESC"/>
         <field name="min_width"
