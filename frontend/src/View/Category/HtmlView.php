@@ -65,6 +65,19 @@ class HtmlView extends CategoryView
         // Флаг указывает не добавлять limitstart=0 к URL адресу
         $this->pagination->hideEmptyLimitstart = true;
         $this->applyFilterPaginationRoute();
+        $wa = $this->getDocument()->getWebAssetManager();
+
+        if ($this->params->get('use_js', true) && $this->params->get('use_cart', false)) {
+            $wa->useScript('com_ishop.addtocart');
+        }
+
+        if ($this->params->get('use_js', true) && $this->params->get('use_compare', false)) {
+            $wa->useScript('com_ishop.addtocompare');
+        }
+
+        if ($this->params->get('use_js', true) && $this->params->get('use_wishlist', false)) {
+            $wa->useScript('com_ishop.addtowishlist');
+        }
 
         // Поскольку приложение устанавливает заголовок страницы по умолчанию,
         // мы должны получить его из самого пункта меню

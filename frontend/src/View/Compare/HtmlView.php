@@ -55,6 +55,19 @@ class HtmlView extends BaseHtmlView
         }       
         
         $this->_prepareDocument();
+        $wa = $this->getDocument()->getWebAssetManager();
+
+        if ($this->params->get('use_js', true) && $this->params->get('use_cart', false)) {
+            $wa->useScript('com_ishop.addtocart');
+        }
+
+        if ($this->params->get('use_js', true) && $this->params->get('use_compare', false)) {
+            $wa->useScript('com_ishop.addtocompare');
+        }
+
+        if ($this->params->get('use_js', true) && $this->params->get('use_wishlist', false)) {
+            $wa->useScript('com_ishop.addtowishlist');
+        }
 
         parent::display($tpl);
     }

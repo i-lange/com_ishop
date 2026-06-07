@@ -149,7 +149,7 @@ SEO-страницы результатов фильтрации:
 - `vite.config.css.mts` использует `emptyOutDir: true` для `media/css`; не держите там ручные файлы, которые не должны удаляться сборкой.
 - Если добавляете новый JS entrypoint, обновите `JS_ENTRY_FILES` в `vite.config.js.mts` и `media/joomla.asset.json`.
 - Если добавляете новый SCSS entrypoint, обновите `SCSS_ENTRIES` в `vite.config.css.mts` и `media/joomla.asset.json`.
-- Новые assets регистрируйте в `media/joomla.asset.json` с понятными `name`, `type`, `uri`, `attributes`, `dependencies`.
+- Новые assets регистрируйте в `media/joomla.asset.json` с понятными `name`, `type`, `uri`, `attributes`, `dependencies`. Здесь регистрируются только неминифицированные файлы, остальные подключаются автоматически.
 - После изменений в проекте синхронно обновляйте версию расширения в `package.json`, `ishop.xml` и `media/joomla.asset.json`, чтобы имя архива, манифест Joomla и asset-декларации не расходились.
 - Административный asset `com_ishop.admin-filter` должен подключаться через Joomla Web Asset Manager и собираться из `media/js/admin-filter.js`; минифицированные файлы обновляйте только через сборку.
 - В PHP-файлах сохраняйте `defined('_JEXEC') or die;`, namespace Joomla API (`Factory`, `HTMLHelper`, `Text`, `LayoutHelper`, `Route`) и существующий стиль проекта.

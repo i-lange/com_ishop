@@ -8,11 +8,12 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const JS_ENTRY_FILES = [  
-  'admin.js',
+  'addtocart.js',
+  'addtocompare.js',
+  'addtowishlist.js',
   'admin-filter.js',
   'admin-product-batch.js',
   'admin-product-batch-es5.js',
-  'front.js',
   'products-loader.js',
 ]
 
