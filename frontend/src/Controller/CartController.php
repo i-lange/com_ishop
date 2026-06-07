@@ -46,6 +46,8 @@ class CartController extends BaseController
         $app->sendHeaders();
 
         try {
+            $this->requireValidPostToken();
+
             $result = $this
                 ->getModel('Cart', 'Site')
                 ->cartAdd($product_id, $quantity);
@@ -86,6 +88,8 @@ class CartController extends BaseController
         $app->sendHeaders();
 
         try {
+            $this->requireValidPostToken();
+
             $result = $this
                 ->getModel('Cart', 'Site')
                 ->cartChange($product_id, $quantity);
@@ -125,6 +129,8 @@ class CartController extends BaseController
         $app->sendHeaders();
 
         try {
+            $this->requireValidPostToken();
+
             $result = $this
                 ->getModel('Cart', 'Site')
                 ->cartRemove($product_id);
@@ -181,5 +187,19 @@ class CartController extends BaseController
         }
 
         $app->close();
+    }
+
+    /**
+     * Проверяет CSRF token для POST AJAX-запросов.
+     *
+     * @return void
+     * @throws Exception
+     * @since 1.0.6
+     */
+    private function requireValidPostToken(): void
+    {
+        if (!$this->checkToken('post', false)) {
+            throw new Exception(Text::_('JINVALID_TOKEN_NOTICE'), 403);
+        }
     }
 }

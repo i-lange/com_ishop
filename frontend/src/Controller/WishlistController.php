@@ -45,6 +45,8 @@ class WishlistController extends BaseController
         $app->sendHeaders();
 
         try {
+            $this->requireValidPostToken();
+
             $model = $this->getModel('Wishlist', 'Site');
             $result = $model->add($product_id);
 
@@ -83,6 +85,8 @@ class WishlistController extends BaseController
         $app->sendHeaders();
 
         try {
+            $this->requireValidPostToken();
+
             $result = $this
                 ->getModel('Wishlist', 'Site')
                 ->remove($product_id);
@@ -119,6 +123,8 @@ class WishlistController extends BaseController
         $app->sendHeaders();
 
         try {
+            $this->requireValidPostToken();
+
             $result = $this
                 ->getModel('Wishlist', 'Site')
                 ->remove();
@@ -135,5 +141,19 @@ class WishlistController extends BaseController
         }
 
         $app->close();
+    }
+
+    /**
+     * Проверяет CSRF token для POST AJAX-запросов.
+     *
+     * @return void
+     * @throws Exception
+     * @since 1.0.6
+     */
+    private function requireValidPostToken(): void
+    {
+        if (!$this->checkToken('post', false)) {
+            throw new Exception(Text::_('JINVALID_TOKEN_NOTICE'), 403);
+        }
     }
 }
