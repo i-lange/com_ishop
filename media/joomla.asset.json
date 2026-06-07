@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
   "name": "com_ishop",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "com_ishop Assets",
   "license": "GNU General Public License version 2 or later",
   "assets": [
@@ -72,6 +72,24 @@
       "name": "com_ishop.front.min",
       "type": "script",
       "uri": "com_ishop/front.min.js",
+      "dependencies": ["core"],
+      "attributes": {
+        "defer": true
+      }
+    },
+    {
+      "name": "com_ishop.products-loader",
+      "type": "script",
+      "uri": "com_ishop/products-loader.js",
+      "dependencies": ["core"],
+      "attributes": {
+        "defer": true
+      }
+    },
+    {
+      "name": "com_ishop.products-loader.min",
+      "type": "script",
+      "uri": "com_ishop/products-loader.min.js",
       "dependencies": ["core"],
       "attributes": {
         "defer": true

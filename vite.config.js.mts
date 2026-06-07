@@ -13,6 +13,7 @@ const JS_ENTRY_FILES = [
   'admin-product-batch.js',
   'admin-product-batch-es5.js',
   'front.js',
+  'products-loader.js',
 ]
 
 function getJsEntries(): Record<string, string> {
