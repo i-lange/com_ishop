@@ -10,33 +10,33 @@
 
 Production-ready сайт для проверки: `magazin-gefest-new.local`.
 
-- Windows: `c:\OSPanel\home\magazin-gefest-new.local\`
-- WSL: `/mnt/c/OSPanel/home/magazin-gefest-new.local`
-- Админка: `https://magazin-gefest-new.local/administrator/`
-- Фронтенд: `https://magazin-gefest-new.local`
+- Путь к папке проекта в Windows: `C:\OSPanel\home\magazin-gefest-new.local\`
+- URL админка: `https://magazin-gefest-new.local/administrator/`
+- URL фронтенд: `https://magazin-gefest-new.local`
 
-Связанные расширения в `/mnt/c/OSPanel/home/`:
+Связанные с проектом расширения доступны в `C:\OSPanel\home\`, это:
 
-- `com_ishop` - текущий компонент магазина.
-- `com_ishopintegro` - интеграции и обмен данными со сторонними сервисами.
+- `com_ishop` - компонент интернет-магазина.
 - `mod_ishop_cart` - модуль корзины.
 - `mod_ishop_compare` - модуль сравнения.
-- `mod_ishop_filter` - модуль фильтрации товаров в категории. При задачах по фильтру почти всегда нужно смотреть его вместе с этим компонентом.
+- `mod_ishop_filter` - модуль фильтрации товаров в категории.
 - `mod_ishop_zone` - выбор зоны доставки.
 - `plg_ishopfinder` - индексация товаров в штатный поиск Joomla.
-- `plg_ishopintegrocron` - запуск методов интеграций из планировщика Joomla.
-- `tpl_itheme` - шаблон клиентской части.
+- `tpl_itheme` - шаблон сайта.
 - `plg_ithemecsscompiler` - компиляция стилей шаблона из админки.
+- `com_ishopintegro` - интеграции и обмен данными со сторонними сервисами.
+- `plg_ishopintegrocron` - запуск методов интеграций из планировщика Joomla.
 
-Изменения в `com_ishop` могут зависеть от этих проектов. Особенно для фильтра проверяйте `../mod_ishop_filter`.
+Изменения в `com_ishop` могут зависеть от этих проектов. Особенно для фильтра проверяй `../mod_ishop_filter`.
 
 ## Официальный контекст Joomla 6
 
-При изменениях сверяйтесь с официальной документацией Joomla, особенно:
+При изменениях сверяйтесь с официальной документацией Joomla, например:
 
 - Getting Started: https://manual.joomla.org/docs/get-started/
 - Technical Requirements: https://manual.joomla.org/docs/get-started/technical-requirements/
 - Module Development Tutorial: https://manual.joomla.org/docs/building-extensions/modules/module-development-tutorial/
+- Ajax and JsonResponse: https://manual.joomla.org/docs/general-concepts/javascript/ajax/
 - Web Asset Manager: https://manual.joomla.org/docs/general-concepts/web-asset-manager/
 
 ## Стек и окружение

@@ -52,7 +52,7 @@
                 return Promise.reject(new Error('Joomla.request is not available'));
             }
 
-            const url = `/index.php?option=com_ishop&controller=compare&task=${encodeURIComponent(task)}`;
+            const url = `/index.php?option=com_ishop&task=compare.${encodeURIComponent(task)}&format=json`;
             const formData = new FormData();
             const csrfToken = this.getCsrfToken();
 
