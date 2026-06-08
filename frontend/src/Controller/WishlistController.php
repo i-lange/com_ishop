@@ -19,13 +19,13 @@ use Joomla\CMS\Response\JsonResponse;
 
 
 /**
- * Контроллер сравнения com_ishop
+ * Контроллер списка избранных товаров com_ishop
  * @since 1.0.0
  */
 class WishlistController extends BaseController
 {
     /**
-     * Добавляем товар в список сравнения по его идентификатору
+     * Добавляем товар в список избранных товаров по его идентификатору
      *
      *
      * @return void
@@ -65,7 +65,7 @@ class WishlistController extends BaseController
     }
 
     /**
-     * Удаляет товар из списка сравнения по его идентификатору
+     * Удаляет товар из списка избранных товаров по его идентификатору
      *
      *
      * @return void
@@ -106,7 +106,7 @@ class WishlistController extends BaseController
     }
 
     /**
-     * Очищает список сравнения
+     * Очищает список избранных товаров
      *
      *
      * @return void
