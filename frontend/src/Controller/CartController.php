@@ -12,7 +12,6 @@ namespace Ilange\Component\Ishop\Site\Controller;
 defined('_JEXEC') or die;
 
 use Exception;
-use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Response\JsonResponse;
@@ -34,16 +33,11 @@ class CartController extends BaseController
      */
     public function add()
     {
-        $app = Factory::getApplication();
-        $app->mimeType = 'application/json';
+        $this->app->allowCache(false);
 
         // идентификатор товара
         $product_id			= $this->input->get('product_id', 0, 'int');
         $quantity	        = $this->input->get('quantity', 1, 'int');
-
-        // Устанавливаем заголовки ответа
-        $app->setHeader('Content-Type', $app->mimeType . '; charset=' . $app->charSet);
-        $app->sendHeaders();
 
         try {
             $this->requireValidPostToken();
@@ -54,7 +48,8 @@ class CartController extends BaseController
 
             if ($result === false) {
                 echo new JsonResponse(false, Text::_('COM_ISHOP_CART_ERROR'), true);
-                $app->close();
+
+                return;
             }
 
             echo new JsonResponse($result);
@@ -62,8 +57,6 @@ class CartController extends BaseController
         catch(Exception $e) {
             echo new JsonResponse($e);
         }
-
-        $app->close();
     }
 
     /**
@@ -76,16 +69,11 @@ class CartController extends BaseController
      */
     public function change()
     {
-        $app = Factory::getApplication();
-        $app->mimeType = 'application/json';
+        $this->app->allowCache(false);
 
         // идентификатор товара
         $product_id			= $this->input->get('product_id', 0, 'int');
         $quantity	        = $this->input->get('quantity', 1, 'int');
-
-        // Устанавливаем заголовки ответа
-        $app->setHeader('Content-Type', $app->mimeType . '; charset=' . $app->charSet);
-        $app->sendHeaders();
 
         try {
             $this->requireValidPostToken();
@@ -96,7 +84,8 @@ class CartController extends BaseController
 
             if ($result === false) {
                 echo new JsonResponse(false, Text::_('COM_ISHOP_CART_ERROR'), true);
-                $app->close();
+
+                return;
             }
 
             echo new JsonResponse($result);
@@ -104,8 +93,6 @@ class CartController extends BaseController
         catch(Exception $e) {
             echo new JsonResponse($e);
         }
-
-        $app->close();
     }
 
     /**
@@ -118,15 +105,10 @@ class CartController extends BaseController
      */
     public function remove()
     {
-        $app = Factory::getApplication();
-        $app->mimeType = 'application/json';
+        $this->app->allowCache(false);
 
         // идентификатор товара
         $product_id			= $this->input->get('product_id', 0, 'int');
-
-        // Устанавливаем заголовки ответа
-        $app->setHeader('Content-Type', $app->mimeType . '; charset=' . $app->charSet);
-        $app->sendHeaders();
 
         try {
             $this->requireValidPostToken();
@@ -137,7 +119,8 @@ class CartController extends BaseController
 
             if ($result === false) {
                 echo new JsonResponse(false, Text::_('COM_ISHOP_CART_ERROR'), true);
-                $app->close();
+
+                return;
             }
 
             echo new JsonResponse($result);
@@ -145,8 +128,6 @@ class CartController extends BaseController
         catch(Exception $e) {
             echo new JsonResponse($e);
         }
-
-        $app->close();
     }
 
     /**
@@ -160,15 +141,10 @@ class CartController extends BaseController
      */
     public function reload()
     {
-        $app = Factory::getApplication();
-        $app->mimeType = 'application/json';
+        $this->app->allowCache(false);
 
         // идентификаторы товаров
         $filter_products = $this->input->get('filter_products', 0, 'int');
-
-        // Устанавливаем заголовки ответа
-        $app->setHeader('Content-Type', $app->mimeType . '; charset=' . $app->charSet);
-        $app->sendHeaders();
 
         try {
             $result = $this
@@ -177,7 +153,8 @@ class CartController extends BaseController
 
             if ($result === false) {
                 echo new JsonResponse($result, Text::_('COM_ISHOP_CART_ERROR'), true);
-                $app->close();
+
+                return;
             }
 
             echo new JsonResponse($result);
@@ -185,8 +162,6 @@ class CartController extends BaseController
         catch(Exception $e) {
             echo new JsonResponse($e);
         }
-
-        $app->close();
     }
 
     /**
