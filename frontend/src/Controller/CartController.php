@@ -144,9 +144,17 @@ class CartController extends BaseController
         $this->app->allowCache(false);
 
         // идентификаторы товаров
-        $filter_products = $this->input->get('filter_products', 0, 'int');
+        $filter_products = $this->input->post->get('filter_products', [], 'array');
+        $filter_products = array_values(
+            array_filter(
+                array_map('intval', (array) $filter_products),
+                static fn ($productId) => $productId > 0
+            )
+        );
 
         try {
+            $this->requireValidPostToken();
+
             $result = $this
                 ->getModel('Cart', 'Site')
                 ->getCart($filter_products, false);

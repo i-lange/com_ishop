@@ -206,13 +206,24 @@
 		updateCart(count) {
 			if (count === undefined || count === null) return;
 
+			const normalizedCount = Math.max(0, Number.parseInt(count, 10) || 0);
 			const carts = document.querySelectorAll('[data-ishop-cart]');
 			if (carts) {
 				carts.forEach(cart => {
-					const counter = cart.querySelector('small');
+					const counter = cart.querySelector('[data-ishop-cart-count]');
+					const countText = cart.querySelector('[data-ishop-cart-count-text]');
+
 					if (counter) {
-						counter.textContent = count;
+						counter.textContent = String(normalizedCount);
 					}
+
+					if (countText) {
+						countText.textContent = normalizedCount === 0
+							? cart.dataset.ishopCartEmptyText || ''
+							: String(normalizedCount);
+					}
+
+					cart.dataset.ishopCartEmpty = normalizedCount === 0 ? '1' : '0';
 				});
 			}
 		},
