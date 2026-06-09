@@ -117,6 +117,7 @@ class CartModel extends BaseDatabaseModel
                     $db->quoteName('a.stock'),
                     $db->quoteName('a.catid'),
                     $db->quoteName('a.manufacturer_id'),
+                    $db->quoteName('a.supplier_id'),
                     $db->quoteName('a.price'),
                     $db->quoteName('a.old_price'),
                     $db->quoteName('a.sale_price'),

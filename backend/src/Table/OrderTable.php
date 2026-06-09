@@ -109,11 +109,11 @@ class OrderTable extends Table
             $this->alias = Factory::getDate()->format('Y-m-d-H-i-s');
         }
 
-        if (trim(str_replace('&nbsp;', '', $this->introtext)) == '') {
+        if (isset($this->introtext) && trim(str_replace('&nbsp;', '', $this->introtext)) == '') {
             $this->introtext = '';
         }
 
-        if (trim(str_replace('&nbsp;', '', $this->fulltext)) == '') {
+        if (isset($this->fulltext) && trim(str_replace('&nbsp;', '', $this->fulltext)) == '') {
             $this->fulltext = '';
         }
 
