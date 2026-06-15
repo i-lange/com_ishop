@@ -95,6 +95,55 @@ class ProductHelper
     }
 
     /**
+     * Формирует HTML-кнопку добавления товара в корзину с учетом режима управления количеством.
+     *
+     * @param   object  $product  Данные товара
+     * @param   object  $params   Параметры компонента
+     * @param   string  $class    CSS-классы кнопки
+     *
+     * @return  string HTML кнопки корзины
+     * @since   1.0.0
+     */
+    public static function renderCartButton(object $product, object $params, string $class = 'btn w-100'): string
+    {
+        $productId = (int) ($product->id ?? 0);
+
+        if ($productId <= 0) {
+            return '';
+        }
+
+        $isSimple     = (bool) $params->get('cart_button_simple', true);
+        $isInCart     = !empty($product->incart);
+        $quantity     = max(1, (int) ($product->incart_count ?? 1));
+        $title        = htmlspecialchars(Text::_('COM_ISHOP_ADD_TO_CART'), ENT_QUOTES, 'UTF-8');
+        $delivery     = htmlspecialchars((string) ($product->delivery ?? Text::_('COM_ISHOP_ADD_TO_CART')), ENT_QUOTES, 'UTF-8');
+        $buttonClass  = trim($class . ($isInCart ? ' active' : ''));
+        $buttonSimple = $isSimple ? 'true' : 'false';
+        $innerHtml    = '<svg class="svg"><use href="/icons_v3.svg#cart"/></svg><span>' . $delivery . '</span>';
+
+        if ($isSimple || !$isInCart) {
+            return '<button class="' . htmlspecialchars($buttonClass, ENT_QUOTES, 'UTF-8') . '"'
+                . ' title="' . $title . '"'
+                . ' data-tocart="' . $productId . '"'
+                . ' data-tocart-simple="' . $buttonSimple . '">'
+                . $innerHtml
+                . '</button>';
+        }
+
+        $buttonClass = trim($class . ' btn-control active');
+
+        return '<button class="' . htmlspecialchars($buttonClass, ENT_QUOTES, 'UTF-8') . '"'
+            . ' title="' . $title . '"'
+            . ' data-tocart="' . $productId . '"'
+            . ' data-tocart-simple="false"'
+            . ' data-original-html="' . htmlspecialchars($innerHtml, ENT_QUOTES, 'UTF-8') . '">'
+            . '<span class="btn_decrease">-</span>'
+            . '<span class="btn_quantity">' . $quantity . '</span>'
+            . '<span class="btn_increase">+</span>'
+            . '</button>';
+    }
+
+    /**
      * Возвращает настройки складов и поставщиков, обслуживающих зону доставки.
      *
      * Данные зоны кэшируются на время текущего запроса, потому что setAvailableState()

@@ -69,6 +69,9 @@ class HtmlView extends CategoryView
 
         if ($this->params->get('use_js', true) && $this->params->get('use_cart', false)) {
             $wa->useScript('com_ishop.addtocart');
+            $this->getDocument()->addScriptOptions('com_ishop.addtocart', [
+                'simple' => (bool) $this->params->get('cart_button_simple', true),
+            ]);
         }
 
         if ($this->params->get('use_js', true) && $this->params->get('use_compare', false)) {

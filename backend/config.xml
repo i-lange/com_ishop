@@ -115,6 +115,17 @@
                    label="COM_ISHOP_FIELD_CART_MAX"
                    description="COM_ISHOP_FIELD_CART_MAX_DESC"
                    showon="use_cart:1"/>
+            <field name="cart_button_simple"
+                   type="radio"
+                   label="COM_ISHOP_FIELD_CART_BUTTON_SIMPLE"
+                   description="COM_ISHOP_FIELD_CART_BUTTON_SIMPLE_DESC"
+                   layout="joomla.form.field.radio.switcher"
+                   default="1"
+                   filter="integer"
+                   showon="use_cart:1">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
         </fieldset>
         <fieldset name="shopping_wishlist" label="COM_ISHOP_FIELD_WISHLIST">
             <field name="use_wishlist"

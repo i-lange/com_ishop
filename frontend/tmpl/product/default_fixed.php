@@ -10,6 +10,7 @@
 defined('_JEXEC') or die;
 
 use Ilange\Component\Ishop\Site\Helper\RouteHelper;
+use Ilange\Component\Ishop\Site\Helper\ProductHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
@@ -53,21 +54,7 @@ $product_price = ($product->sale_price > 0) ? $product->sale_price : $product->p
                 title="<?php echo Text::_('COM_ISHOP_PRODUCT_BUY_NOW'); ?>"
                 type="submit"><?php echo Text::_('COM_ISHOP_PRODUCT_BUY_NOW'); ?></button>
     </form>
-    <?php if ($product->incart) : ?>
-    <button class="btn w-100 btn-control"
-            title="<?php echo Text::_('COM_ISHOP_ADD_TO_CART'); ?>"
-            data-tocart="<?php echo $product->id; ?>"
-            data-original-html="<svg class=&quot;svg&quot;><use href=&quot;/icons_v3.svg#cart&quot;/></svg><span><?php echo $product->delivery; ?></span>">
-        <span class="btn_decrease">-</span>
-        <span class="btn_quantity"><?php echo $product->incart_count; ?></span>
-        <span class="btn_increase">+</span>
-    </button>
-    <?php else : ?>
-    <button class="btn w-100"
-            title="<?php echo Text::_('COM_ISHOP_ADD_TO_CART'); ?>"
-            data-tocart="<?php echo $product->id; ?>"
-            data-tocart-text="<?php echo $product->delivery; ?>"><svg class="svg"><use href="/icons_v3.svg#cart"/></svg><span><?php echo $product->delivery; ?></span></button>
-    <?php endif; ?>
+    <?php echo ProductHelper::renderCartButton($product, $this->params); ?>
 </div>
 <?php else : ?>
     <div class="card_not_available"><?php echo Text::_('COM_ISHOP_PRODUCT_NOT_AVAILABLE'); ?></div>

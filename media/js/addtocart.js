@@ -10,8 +10,45 @@
 	'use strict';
 
 	const CartButtonsManager = {
+		options: {
+			simple: true,
+		},
+
 		init() {
+			this.loadOptions();
+			this.normalizeInitialButtons();
 			document.addEventListener('click', this.handleButtonClick.bind(this));
+		},
+
+		loadOptions() {
+			if (!Joomla || typeof Joomla.getOptions !== 'function') {
+				return;
+			}
+
+			const options = Joomla.getOptions('com_ishop.addtocart', {});
+
+			if (typeof options.simple === 'boolean') {
+				this.options.simple = options.simple;
+			}
+		},
+
+		normalizeInitialButtons() {
+			document.querySelectorAll('[data-tocart]').forEach(btn => {
+				if (
+					btn.classList.contains('btn-control')
+					|| btn.querySelector('.btn_quantity')
+				) {
+					btn.classList.add('active');
+
+					if (btn.dataset.tocartSimple === undefined && this.options.simple === false) {
+						btn.dataset.tocartSimple = 'false';
+					}
+
+					if (this.isSimpleButton(btn)) {
+						this.restoreSimpleButton(btn);
+					}
+				}
+			});
 		},
 
 		handleButtonClick(e) {
@@ -30,6 +67,12 @@
 			const productId = Number(btn.dataset.tocart) || 0;
 			if (productId <= 0) return;
 
+			if (this.isSimpleButton(btn)) {
+				e.preventDefault();
+				this.toggleSimpleButton(productId, btn);
+				return;
+			}
+
 			if (btn.classList.contains('active')) {
 				if (e.target.classList.contains('btn_decrease')) {
 					e.preventDefault();
@@ -42,6 +85,23 @@
 				e.preventDefault();
 				this.addToCart(productId, btn);
 			}
+		},
+
+		isSimpleButton(btn) {
+			if (btn.dataset.tocartSimple !== undefined) {
+				return !['0', 'false', 'no'].includes(btn.dataset.tocartSimple.toLowerCase());
+			}
+
+			return this.options.simple !== false;
+		},
+
+		toggleSimpleButton(productId, btn) {
+			if (btn.classList.contains('active')) {
+				this.removeFromCart(productId, btn);
+				return;
+			}
+
+			this.addToCart(productId, btn);
 		},
 
 		getCsrfToken() {
@@ -125,7 +185,11 @@
 					this.updateCart(response.data?.count);
 
 					const quantity = Number(response.data?.products?.[productId]?.count) || 1;
-					this.transformToControlButton(btn, quantity);
+					if (this.isSimpleButton(btn)) {
+						btn.classList.add('active');
+					} else {
+						this.transformToControlButton(btn, quantity);
+					}
 					this.trackEcommerce('add_to_cart', productId, quantity);
 				})
 				.catch(err => {
@@ -134,6 +198,39 @@
 				.finally(() => {
 					this.setButtonPending(btn, false);
 				});
+		},
+
+		removeFromCart(productId, btn) {
+			this.setButtonPending(btn, true);
+
+			this.sendRequest('remove', {
+				product_id: productId,
+			})
+				.then(response => {
+					this.updateCart(response.data?.count);
+
+					if (this.isSimpleButton(btn)) {
+						btn.classList.remove('active');
+					} else {
+						this.restoreOriginalButton(btn);
+					}
+
+					this.trackEcommerce('remove_from_cart', productId, 1);
+				})
+				.catch(err => {
+					console.error('Cart remove error:', err);
+				})
+				.finally(() => {
+					this.setButtonPending(btn, false);
+				});
+		},
+
+		restoreSimpleButton(btn) {
+			if (btn.dataset.originalHtml !== undefined) {
+				btn.innerHTML = btn.dataset.originalHtml;
+			}
+
+			btn.classList.remove('btn-control');
 		},
 
 		transformToControlButton(btn, quantity) {
@@ -148,6 +245,7 @@
                 `;
 
 			btn.classList.add('active');
+			btn.classList.add('btn-control');
 		},
 
 		restoreOriginalButton(btn) {
@@ -156,6 +254,7 @@
 			}
 
 			btn.classList.remove('active');
+			btn.classList.remove('btn-control');
 			delete btn.dataset.originalHtml;
 		},
 
