@@ -16,7 +16,7 @@ use Ilange\Component\Ishop\Site\Helper\RouteHelper;
 $icon     = 'icon-check';
 $title    = $this->item ? $this->item->title : '';
 $content  = $this->item ? $this->item->alias : '';
-$data     = ['contentType' => 'com_ishop.prefix'];
+$data     = ['contentType' => 'com_ishop.service'];
 
 if ($this->item) {
     $data['id']    = $this->item->id;
