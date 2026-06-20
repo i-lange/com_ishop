@@ -22,9 +22,12 @@
                label="COM_ISHOP_FIELD_MANUFACTURER"
                hint="COM_ISHOP_FILTER_MANUFACTURER_HINT"/>
         <field name="supplier_id"
-               type="suppliers"
+               type="modal_supplier"
                default="0"
-               validate="options"
+               select="true"
+               new="true"
+               edit="true"
+               clear="true"
                label="COM_ISHOP_FIELD_SUPPLIER"/>
         <field name="importers"
                type="suppliers"
