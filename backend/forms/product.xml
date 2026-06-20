@@ -12,10 +12,13 @@
                class="readonly"
                label="JGLOBAL_FIELD_ID_LABEL"/>
         <field name="manufacturer_id"
-               type="manufacturers"
+               type="modal_manufacturer"
                required="true"
                default="0"
-               validate="options"
+               select="true"
+               new="true"
+               edit="true"
+               clear="true"
                label="COM_ISHOP_FIELD_MANUFACTURER"
                hint="COM_ISHOP_FILTER_MANUFACTURER_HINT"/>
         <field name="supplier_id"
