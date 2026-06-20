@@ -13,6 +13,7 @@ const JS_ENTRY_FILES = [
   'addtocompare.js',
   'addtowishlist.js',
   'admin-filter.js',
+  'admin-modal-products.js',
   'admin-product-batch.js',
   'admin-product-batch-es5.js',
   'products-loader.js',
@@ -56,6 +57,7 @@ export default defineConfig({
 
     rolldownOptions: {
       input: getJsEntries(),
+      external: ['joomla.dialog'],
       output: {
         codeSplitting: true,
         entryFileNames: '[name].min.js',

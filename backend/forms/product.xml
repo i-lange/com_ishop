@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<form>
+<form addruleprefix="Ilange\Component\Ishop\Administrator\Rule">
     <config>
         <inlinehelp button="show"/>
     </config>
@@ -107,21 +107,21 @@
                validate="number"
                label="COM_ISHOP_FIELD_STOCK"/>
         <field name="offers"
-               type="products"
+               type="modal_products"
                multiple="true"
-               validate="options"
+               validate="productids"
                label="COM_ISHOP_FIELD_OFFERS"
                description="COM_ISHOP_FIELD_OFFERS_DESC"/>
         <field name="related"
-               type="products"
+               type="modal_products"
                multiple="true"
-               validate="options"
+               validate="productids"
                label="COM_ISHOP_FIELD_RELATED"
                description="COM_ISHOP_FIELD_RELATED_DESC"/>
         <field name="similar"
-               type="products"
+               type="modal_products"
                multiple="true"
-               validate="options"
+               validate="productids"
                label="COM_ISHOP_FIELD_SIMILAR"
                description="COM_ISHOP_FIELD_SIMILAR_DESC"/>
         <field name="width"
