@@ -1,12 +1,12 @@
 import JoomlaDialog from 'joomla.dialog';
 
 ((document, window) => {
-  const fieldSelector = '[data-modal-products-field]';
-  const listSelector = '[data-modal-products-list]';
-  const itemSelector = '[data-modal-product-item]';
-  const templateSelector = '[data-modal-products-template]';
-  const checkedSelector = '[data-modal-product-checkbox]:checked';
-  const noSelectionMessage = 'COM_ISHOP_MODAL_PRODUCTS_SELECT_AT_LEAST_ONE';
+  const fieldSelector = '[data-modal-items-field]';
+  const listSelector = '[data-modal-items-list]';
+  const itemSelector = '[data-modal-item]';
+  const templateSelector = '[data-modal-items-template]';
+  const checkedSelector = '[data-modal-item-checkbox]:checked';
+  const messageType = 'com_ishop:modal-items-select';
 
   const translate = (key, fallback) => {
     if (window.Joomla && typeof window.Joomla.Text === 'object' && typeof window.Joomla.Text._ === 'function') {
@@ -16,6 +16,12 @@ import JoomlaDialog from 'joomla.dialog';
     return fallback;
   };
 
+  const formatCountText = (key, count, fallback) => {
+    const text = translate(key, fallback);
+
+    return text.replace('%d', count).replace('%s', count);
+  };
+
   const getSelectedIds = field => Array.from(field.querySelectorAll(itemSelector))
     .map(item => item.dataset.id)
     .filter(Boolean);
@@ -23,14 +29,15 @@ import JoomlaDialog from 'joomla.dialog';
   const updateState = field => {
     const count = field.querySelectorAll(itemSelector).length;
     const titleInput = field.querySelector('.form-control');
-    const clearButton = field.querySelector('[data-modal-products-clear]');
-    const requiredInput = field.querySelector('[data-modal-products-required]');
+    const clearButton = field.querySelector('[data-modal-items-clear]');
+    const requiredInput = field.querySelector('[data-modal-items-required]');
+    const oneKey = field.dataset.selectedOneKey;
+    const manyKey = field.dataset.selectedManyKey;
 
     if (titleInput) {
-      const manyText = translate('COM_ISHOP_N_PRODUCTS_SELECTED', `${count} products selected`);
       titleInput.value = count === 1
-        ? translate('COM_ISHOP_1_PRODUCT_SELECTED', '1 product selected')
-        : manyText.replace('%d', count).replace('%s', count);
+        ? translate(oneKey, '1 item selected')
+        : formatCountText(manyKey, count, `${count} items selected`);
     }
 
     if (clearButton) {
@@ -52,9 +59,9 @@ import JoomlaDialog from 'joomla.dialog';
     }));
   };
 
-  const addProduct = (field, product) => {
-    const id = Number.parseInt(product.id || product.value, 10);
-    const title = `${product.title || product.text || id}`.trim();
+  const addItem = (field, itemData) => {
+    const id = Number.parseInt(itemData.id || itemData.value, 10);
+    const title = `${itemData.title || itemData.text || id}`.trim();
 
     if (!id || field.querySelector(`${itemSelector}[data-id="${id}"]`)) {
       return;
@@ -69,7 +76,7 @@ import JoomlaDialog from 'joomla.dialog';
 
     const item = template.content.firstElementChild.cloneNode(true);
     const input = item.querySelector('input[type="hidden"]');
-    const titleNode = item.querySelector('.modal-product-title');
+    const titleNode = item.querySelector('.modal-item-title');
 
     item.dataset.id = String(id);
     item.dataset.title = title;
@@ -85,13 +92,13 @@ import JoomlaDialog from 'joomla.dialog';
     list.append(item);
   };
 
-  const addProducts = (field, products) => {
-    products.forEach(product => addProduct(field, product));
+  const addItems = (field, items) => {
+    items.forEach(item => addItem(field, item));
     updateState(field);
     dispatchChange(field);
   };
 
-  const removeProduct = item => {
+  const removeItem = item => {
     const field = item.closest(fieldSelector);
 
     item.remove();
@@ -102,7 +109,7 @@ import JoomlaDialog from 'joomla.dialog';
     }
   };
 
-  const moveProduct = (item, direction) => {
+  const moveItem = (item, direction) => {
     const field = item.closest(fieldSelector);
 
     if (direction === 'up' && item.previousElementSibling) {
@@ -128,7 +135,7 @@ import JoomlaDialog from 'joomla.dialog';
     const dialog = new JoomlaDialog({
       popupType: 'iframe',
       src: url.toString(),
-      textHeader: field.dataset.modalTitle || translate('COM_ISHOP_SELECT_PRODUCTS', 'Select products'),
+      textHeader: field.dataset.modalTitle || translate('JSELECT', 'Select'),
       width: '90vw',
       height: '80vh',
     });
@@ -138,8 +145,8 @@ import JoomlaDialog from 'joomla.dialog';
         return;
       }
 
-      if (event.data.messageType === 'com_ishop:products-select') {
-        addProducts(field, Array.isArray(event.data.products) ? event.data.products : []);
+      if (event.data.messageType === messageType) {
+        addItems(field, Array.isArray(event.data.items) ? event.data.items : []);
         dialog.close();
       } else if (event.data.messageType === 'joomla:cancel') {
         dialog.close();
@@ -155,38 +162,38 @@ import JoomlaDialog from 'joomla.dialog';
     dialog.show();
   };
 
-  const clearProducts = field => {
+  const clearItems = field => {
     field.querySelectorAll(itemSelector).forEach(item => item.remove());
     updateState(field);
     dispatchChange(field);
   };
 
   const setupField = field => {
-    if (field.dataset.modalProductsBound === '1') {
+    if (field.dataset.modalItemsBound === '1') {
       return;
     }
 
-    field.dataset.modalProductsBound = '1';
+    field.dataset.modalItemsBound = '1';
     updateState(field);
 
     field.addEventListener('click', event => {
-      const selectButton = event.target.closest('[data-modal-products-select]');
-      const clearButton = event.target.closest('[data-modal-products-clear]');
-      const removeButton = event.target.closest('[data-modal-product-remove]');
-      const moveButton = event.target.closest('[data-modal-product-move]');
+      const selectButton = event.target.closest('[data-modal-items-select]');
+      const clearButton = event.target.closest('[data-modal-items-clear]');
+      const removeButton = event.target.closest('[data-modal-item-remove]');
+      const moveButton = event.target.closest('[data-modal-item-move]');
 
       if (selectButton) {
         event.preventDefault();
         openDialog(field);
       } else if (clearButton) {
         event.preventDefault();
-        clearProducts(field);
+        clearItems(field);
       } else if (removeButton) {
         event.preventDefault();
-        removeProduct(removeButton.closest(itemSelector));
+        removeItem(removeButton.closest(itemSelector));
       } else if (moveButton) {
         event.preventDefault();
-        moveProduct(moveButton.closest(itemSelector), moveButton.dataset.modalProductMove);
+        moveItem(moveButton.closest(itemSelector), moveButton.dataset.modalItemMove);
       }
     });
   };
@@ -198,30 +205,30 @@ import JoomlaDialog from 'joomla.dialog';
   };
 
   const setupModal = () => {
-    const addButton = document.querySelector('[data-modal-products-add]');
+    const addButton = document.querySelector('[data-modal-items-add]');
 
-    if (!addButton || addButton.dataset.modalProductsBound === '1') {
+    if (!addButton || addButton.dataset.modalItemsBound === '1') {
       return;
     }
 
-    addButton.dataset.modalProductsBound = '1';
+    addButton.dataset.modalItemsBound = '1';
 
     addButton.addEventListener('click', event => {
       event.preventDefault();
 
-      const products = Array.from(document.querySelectorAll(checkedSelector)).map(input => ({
+      const items = Array.from(document.querySelectorAll(checkedSelector)).map(input => ({
         id: input.value,
         title: input.dataset.title || input.value,
       }));
 
-      if (!products.length) {
-        window.alert(translate(noSelectionMessage, 'Select at least one product.'));
+      if (!items.length) {
+        window.alert(translate(addButton.dataset.emptySelectionKey, 'Select at least one item.'));
         return;
       }
 
       window.parent.postMessage({
-        messageType: 'com_ishop:products-select',
-        products,
+        messageType,
+        items,
       }, window.location.origin);
     });
   };

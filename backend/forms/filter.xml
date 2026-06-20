@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<form>
+<form addruleprefix="Ilange\Component\Ishop\Administrator\Rule">
     <config>
         <inlinehelp button="show"/>
     </config>
@@ -30,9 +30,9 @@
             <option value="-2">JTRASHED</option>
         </field>
         <field name="manufacturers"
-               type="manufacturers"
+               type="modal_manufacturers"
                multiple="true"
-               validate="options"
+               validate="manufacturerids"
                label="COM_ISHOP_FIELD_MANUFACTURER"/>
         <field name="ishop_fields"
                type="filterFields"

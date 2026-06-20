@@ -40,10 +40,13 @@ $selected  = array_filter(array_map('intval', explode(',', (string) $app->getInp
 <div class="container-popup">
     <form action="<?php echo Route::_('index.php?option=com_ishop&view=products&layout=modal&tmpl=component' . ($multi ? '&multi=1&selected=' . implode(',', $selected) : '') . '&' . Session::getFormToken() . '=1'); ?>" method="post" name="adminForm" id="adminForm">
         <?php if ($multi) : ?>
-            <?php $wa->useScript('com_ishop.admin-modal-products'); ?>
-            <?php Text::script('COM_ISHOP_MODAL_PRODUCTS_SELECT_AT_LEAST_ONE'); ?>
+            <?php $wa->useScript('com_ishop.admin-modal-items'); ?>
+            <?php Text::script('COM_ISHOP_MODAL_ITEMS_SELECT_AT_LEAST_ONE'); ?>
             <div class="mb-3">
-                <button type="button" class="btn btn-primary" data-modal-products-add>
+                <button type="button"
+                        class="btn btn-primary"
+                        data-modal-items-add
+                        data-empty-selection-key="COM_ISHOP_MODAL_ITEMS_SELECT_AT_LEAST_ONE">
                     <span class="icon-plus" aria-hidden="true"></span>
                     <?php echo Text::_('COM_ISHOP_MODAL_PRODUCTS_ADD_SELECTED'); ?>
                 </button>
@@ -130,7 +133,7 @@ $selected  = array_filter(array_map('intval', explode(',', (string) $app->getInp
                                        id="<?php echo $checkboxId; ?>"
                                        class="form-check-input"
                                        value="<?php echo (int) $item->id; ?>"
-                                       data-modal-product-checkbox
+                                       data-modal-item-checkbox
                                        data-title="<?php echo $titleEscaped; ?>"
                                        <?php echo in_array((int) $item->id, $selected, true) ? ' checked' : ''; ?>>
                             </td>

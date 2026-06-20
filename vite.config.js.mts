@@ -13,7 +13,7 @@ const JS_ENTRY_FILES = [
   'addtocompare.js',
   'addtowishlist.js',
   'admin-filter.js',
-  'admin-modal-products.js',
+  'admin-modal-items.js',
   'admin-product-batch.js',
   'admin-product-batch-es5.js',
   'products-loader.js',

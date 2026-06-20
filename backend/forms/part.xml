@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<form>
+<form addruleprefix="Ilange\Component\Ishop\Administrator\Rule">
     <config>
         <inlinehelp button="show"/>
     </config>
@@ -99,7 +99,8 @@
     <field name="attribs"
            type="subform"
            label="COM_ISHOP_FIELD_PARAMS_ZONE">
-        <form>
+        <form addfieldprefix="Ilange\Component\Ishop\Administrator\Field"
+              addruleprefix="Ilange\Component\Ishop\Administrator\Rule">
             <field name="price_mode"
                    type="list"
                    label="COM_ISHOP_FIELD_PRICE_MODE"
@@ -197,9 +198,9 @@
                    class="js-select-submit-on-change"
                    published="1"/>
             <field name="manufacturers"
-                   type="manufacturers"
+                   type="modal_manufacturers"
                    multiple="true"
-                   validate="options"
+                   validate="manufacturerids"
                    label="COM_ISHOP_FIELD_MANUFACTURER"/>
             <field name="first_part"
                    type="text"

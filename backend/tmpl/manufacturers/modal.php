@@ -34,9 +34,24 @@ $wa->useScript('core')
 $listOrder = $this->escape($this->state->get('list.ordering'));
 $listDirn  = $this->escape($this->state->get('list.direction'));
 $multilang = Multilanguage::isEnabled();
+$multi     = (bool) $app->getInput()->getInt('multi', 0);
+$selected  = array_filter(array_map('intval', explode(',', (string) $app->getInput()->getString('selected', ''))));
 ?>
 <div class="container-popup">
-    <form action="<?php echo Route::_('index.php?option=com_ishop&view=manufacturers&layout=modal&tmpl=component&' . Session::getFormToken() . '=1'); ?>" method="post" name="adminForm" id="adminForm">
+    <form action="<?php echo Route::_('index.php?option=com_ishop&view=manufacturers&layout=modal&tmpl=component' . ($multi ? '&multi=1&selected=' . implode(',', $selected) : '') . '&' . Session::getFormToken() . '=1'); ?>" method="post" name="adminForm" id="adminForm">
+        <?php if ($multi) : ?>
+            <?php $wa->useScript('com_ishop.admin-modal-items'); ?>
+            <?php Text::script('COM_ISHOP_MODAL_ITEMS_SELECT_AT_LEAST_ONE'); ?>
+            <div class="mb-3">
+                <button type="button"
+                        class="btn btn-primary"
+                        data-modal-items-add
+                        data-empty-selection-key="COM_ISHOP_MODAL_ITEMS_SELECT_AT_LEAST_ONE">
+                    <span class="icon-plus" aria-hidden="true"></span>
+                    <?php echo Text::_('COM_ISHOP_MODAL_MANUFACTURERS_ADD_SELECTED'); ?>
+                </button>
+            </div>
+        <?php endif; ?>
         <?php echo LayoutHelper::render('joomla.searchtools.default', ['view' => $this]); ?>
         <?php if (empty($this->items)) : ?>
             <div class="alert alert-info">
@@ -52,6 +67,11 @@ $multilang = Multilanguage::isEnabled();
                 </caption>
                 <thead>
                     <tr>
+                        <?php if ($multi) : ?>
+                            <th scope="col" class="w-1 text-center">
+                                <span class="visually-hidden"><?php echo Text::_('JSELECT'); ?></span>
+                            </th>
+                        <?php endif; ?>
                         <th scope="col" class="w-1 text-center">
                             <?php echo HTMLHelper::_('searchtools.sort', 'JSTATUS', 'a.state', $listDirn, $listOrder); ?>
                         </th>
@@ -94,8 +114,21 @@ $multilang = Multilanguage::isEnabled();
 
                     $link     = RouteHelper::getManufacturerRoute($item->id, $item->language);
                     $itemHtml = '<a href="' . $this->escape($link) . '"' . ($lang ? ' hreflang="' . $lang . '"' : '') . '>' . $item->title . '</a>';
+                    $titleEscaped = $this->escape($item->title);
+                    $checkboxId   = 'modal-manufacturer-' . (int) $item->id;
                     ?>
                     <tr class="row<?php echo $i % 2; ?>">
+                        <?php if ($multi) : ?>
+                            <td class="text-center">
+                                <input type="checkbox"
+                                       id="<?php echo $checkboxId; ?>"
+                                       class="form-check-input"
+                                       value="<?php echo (int) $item->id; ?>"
+                                       data-modal-item-checkbox
+                                       data-title="<?php echo $titleEscaped; ?>"
+                                       <?php echo in_array((int) $item->id, $selected, true) ? ' checked' : ''; ?>>
+                            </td>
+                        <?php endif; ?>
                         <td class="text-center">
                             <span class="tbody-icon">
                                 <span class="<?php echo $iconStates[$this->escape($item->state)]; ?>" aria-hidden="true"></span>
@@ -104,14 +137,20 @@ $multilang = Multilanguage::isEnabled();
                         <th scope="row">
                             <?php $attribs = 'data-content-select data-content-type="com_ishop.manufacturer"'
                                 . ' data-id="' . $item->id . '"'
-                                . ' data-title="' . $this->escape($item->title) . '"'
+                                . ' data-title="' . $titleEscaped . '"'
                                 . ' data-uri="' . $this->escape($link) . '"'
                                 . ' data-language="' . $this->escape($lang) . '"'
                                 . ' data-html="' . $this->escape($itemHtml) . '"';
                             ?>
-                            <a class="select-link" href="javascript:void(0)" <?php echo $attribs; ?>>
-                                <?php echo $this->escape($item->title); ?>
-                            </a>
+                            <?php if ($multi) : ?>
+                                <label class="select-link" for="<?php echo $checkboxId; ?>">
+                                    <?php echo $titleEscaped; ?>
+                                </label>
+                            <?php else : ?>
+                                <a class="select-link" href="javascript:void(0)" <?php echo $attribs; ?>>
+                                    <?php echo $titleEscaped; ?>
+                                </a>
+                            <?php endif; ?>
                             <div class="small break-word">
                                 <?php if (empty($item->note)) : ?>
                                     <?php echo Text::sprintf('JGLOBAL_LIST_ALIAS', $this->escape($item->alias)); ?>

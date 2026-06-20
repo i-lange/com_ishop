@@ -20,15 +20,15 @@ use Joomla\Registry\Registry;
 use Joomla\Utilities\ArrayHelper;
 
 /**
- * Правило проверки массива идентификаторов товаров.
+ * Правило проверки массива идентификаторов производителей.
  * @since 1.0.0
  */
-class ProductidsRule extends FormRule implements DatabaseAwareInterface
+class ManufactureridsRule extends FormRule implements DatabaseAwareInterface
 {
     use DatabaseAwareTrait;
 
     /**
-     * Проверяет, что все переданные ID существуют в таблице товаров.
+     * Проверяет, что все переданные ID существуют в таблице производителей.
      *
      * @param   \SimpleXMLElement  $element  XML-описание поля
      * @param   mixed              $value    Значение поля
@@ -59,7 +59,7 @@ class ProductidsRule extends FormRule implements DatabaseAwareInterface
         $db    = $this->getDatabase();
         $query = $db->createQuery()
             ->select('COUNT(*)')
-            ->from($db->quoteName('#__ishop_products'))
+            ->from($db->quoteName('#__ishop_manufacturers'))
             ->whereIn($db->quoteName('id'), $ids, ParameterType::INTEGER);
         $db->setQuery($query);
 

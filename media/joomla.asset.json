@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
   "name": "com_ishop",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "com_ishop Assets",
   "license": "GNU General Public License version 2 or later",
   "assets": [
@@ -20,9 +20,9 @@
       }
     },
     {
-      "name": "com_ishop.admin-modal-products",
+      "name": "com_ishop.admin-modal-items",
       "type": "script",
-      "uri": "com_ishop/admin-modal-products.js",
+      "uri": "com_ishop/admin-modal-items.js",
       "dependencies": ["core", "joomla.dialog"],
       "attributes": {
         "type": "module"

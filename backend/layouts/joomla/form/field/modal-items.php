@@ -26,35 +26,43 @@ extract($displayData);
  * @var   boolean  $required
  * @var   array    $urls
  * @var   array    $modalTitles
- * @var   array    $selectedProducts
+ * @var   array    $selectedItems
+ * @var   string   $fieldClass
+ * @var   string   $selectTitleKey
+ * @var   string   $selectedOneKey
+ * @var   string   $selectedManyKey
+ * @var   string   $emptySelectionKey
  */
 
 $wa = Factory::getApplication()->getDocument()->getWebAssetManager();
 
 if (!$readonly && !$disabled) {
     $wa->useScript('joomla.dialog')
-        ->useScript('com_ishop.admin-modal-products');
+        ->useScript('com_ishop.admin-modal-items');
 }
 
 $baseName = str_ends_with($name, '[]') ? substr($name, 0, -2) : $name;
 $fieldId  = preg_replace('/[^A-Za-z0-9_-]/', '_', $id);
-$classes  = trim('com-ishop-modal-products ' . $class);
+$classes  = trim('com-ishop-modal-items ' . ($fieldClass ?? '') . ' ' . $class);
 $readonly = $readonly || $disabled;
-$count    = count($selectedProducts);
-$summary  = $count === 1 ? Text::_('COM_ISHOP_1_PRODUCT_SELECTED') : Text::sprintf('COM_ISHOP_N_PRODUCTS_SELECTED', $count);
+$count    = count($selectedItems);
+$summary  = $count === 1 ? Text::_($selectedOneKey) : Text::sprintf($selectedManyKey, $count);
 
-Text::script('COM_ISHOP_SELECT_PRODUCTS');
-Text::script('COM_ISHOP_1_PRODUCT_SELECTED');
-Text::script('COM_ISHOP_N_PRODUCTS_SELECTED');
-Text::script('COM_ISHOP_MODAL_PRODUCTS_SELECT_AT_LEAST_ONE');
+Text::script($selectTitleKey);
+Text::script($selectedOneKey);
+Text::script($selectedManyKey);
+Text::script($emptySelectionKey);
 ?>
 <div class="<?php echo $this->escape($classes); ?>"
      id="<?php echo $this->escape($fieldId); ?>_wrapper"
-     data-modal-products-field
+     data-modal-items-field
      data-field-id="<?php echo $this->escape($fieldId); ?>"
      data-input-name="<?php echo $this->escape($baseName); ?>[]"
      data-modal-url="<?php echo $this->escape($urls['select'] ?? ''); ?>"
-     data-modal-title="<?php echo $this->escape($modalTitles['select'] ?? Text::_('COM_ISHOP_SELECT_PRODUCTS')); ?>">
+     data-modal-title="<?php echo $this->escape($modalTitles['select'] ?? Text::_($selectTitleKey)); ?>"
+     data-selected-one-key="<?php echo $this->escape($selectedOneKey); ?>"
+     data-selected-many-key="<?php echo $this->escape($selectedManyKey); ?>"
+     data-empty-selection-key="<?php echo $this->escape($emptySelectionKey); ?>">
     <div class="input-group">
         <input type="text"
                class="form-control"
@@ -64,16 +72,15 @@ Text::script('COM_ISHOP_MODAL_PRODUCTS_SELECT_AT_LEAST_ONE');
         <?php if (!$readonly) : ?>
             <button type="button"
                     class="btn btn-primary"
-                    data-modal-products-select
-                    aria-label="<?php echo $this->escape(Text::_('COM_ISHOP_SELECT_PRODUCTS')); ?>">
+                    data-modal-items-select
+                    aria-label="<?php echo $this->escape(Text::_($selectTitleKey)); ?>">
                 <span class="icon-list" aria-hidden="true"></span>
                 <?php echo Text::_('JSELECT'); ?>
             </button>
             <button type="button"
                     class="btn btn-secondary"
-                    data-modal-products-clear
-                    data-show-when-products
-                    <?php echo empty($selectedProducts) ? ' hidden' : ''; ?>
+                    data-modal-items-clear
+                    <?php echo empty($selectedItems) ? ' hidden' : ''; ?>
                     aria-label="<?php echo $this->escape(Text::_('JGLOBAL_FIELD_REMOVE')); ?>">
                 <span class="icon-times" aria-hidden="true"></span>
             </button>
@@ -81,59 +88,59 @@ Text::script('COM_ISHOP_MODAL_PRODUCTS_SELECT_AT_LEAST_ONE');
     </div>
 
     <ul class="list-group mt-2"
-        data-modal-products-list
+        data-modal-items-list
         aria-live="polite">
-        <?php foreach ($selectedProducts as $product) : ?>
+        <?php foreach ($selectedItems as $item) : ?>
             <li class="list-group-item d-flex align-items-center gap-2"
-                data-modal-product-item
-                data-id="<?php echo (int) $product['id']; ?>"
-                data-title="<?php echo $this->escape($product['title']); ?>">
-                <span class="modal-product-title flex-grow-1"><?php echo $this->escape($product['title']); ?></span>
+                data-modal-item
+                data-id="<?php echo (int) $item['id']; ?>"
+                data-title="<?php echo $this->escape($item['title']); ?>">
+                <span class="modal-item-title flex-grow-1"><?php echo $this->escape($item['title']); ?></span>
                 <?php if (!$readonly) : ?>
                     <button type="button"
                             class="btn btn-sm btn-outline-secondary"
-                            data-modal-product-move="up"
+                            data-modal-item-move="up"
                             aria-label="<?php echo $this->escape(Text::_('JLIB_HTML_MOVE_UP')); ?>">
                         <span class="icon-arrow-up" aria-hidden="true"></span>
                     </button>
                     <button type="button"
                             class="btn btn-sm btn-outline-secondary"
-                            data-modal-product-move="down"
+                            data-modal-item-move="down"
                             aria-label="<?php echo $this->escape(Text::_('JLIB_HTML_MOVE_DOWN')); ?>">
                         <span class="icon-arrow-down" aria-hidden="true"></span>
                     </button>
                     <button type="button"
                             class="btn btn-sm btn-outline-danger"
-                            data-modal-product-remove
+                            data-modal-item-remove
                             aria-label="<?php echo $this->escape(Text::_('JGLOBAL_FIELD_REMOVE')); ?>">
                         <span class="icon-times" aria-hidden="true"></span>
                     </button>
                 <?php endif; ?>
                 <input type="hidden"
                        name="<?php echo $this->escape($baseName); ?>[]"
-                       value="<?php echo (int) $product['id']; ?>">
+                       value="<?php echo (int) $item['id']; ?>">
             </li>
         <?php endforeach; ?>
     </ul>
 
-    <template data-modal-products-template>
-        <li class="list-group-item d-flex align-items-center gap-2" data-modal-product-item>
-            <span class="modal-product-title flex-grow-1"></span>
+    <template data-modal-items-template>
+        <li class="list-group-item d-flex align-items-center gap-2" data-modal-item>
+            <span class="modal-item-title flex-grow-1"></span>
             <button type="button"
                     class="btn btn-sm btn-outline-secondary"
-                    data-modal-product-move="up"
+                    data-modal-item-move="up"
                     aria-label="<?php echo $this->escape(Text::_('JLIB_HTML_MOVE_UP')); ?>">
                 <span class="icon-arrow-up" aria-hidden="true"></span>
             </button>
             <button type="button"
                     class="btn btn-sm btn-outline-secondary"
-                    data-modal-product-move="down"
+                    data-modal-item-move="down"
                     aria-label="<?php echo $this->escape(Text::_('JLIB_HTML_MOVE_DOWN')); ?>">
                 <span class="icon-arrow-down" aria-hidden="true"></span>
             </button>
             <button type="button"
                     class="btn btn-sm btn-outline-danger"
-                    data-modal-product-remove
+                    data-modal-item-remove
                     aria-label="<?php echo $this->escape(Text::_('JGLOBAL_FIELD_REMOVE')); ?>">
                 <span class="icon-times" aria-hidden="true"></span>
             </button>
@@ -146,8 +153,8 @@ Text::script('COM_ISHOP_MODAL_PRODUCTS_SELECT_AT_LEAST_ONE');
                class="visually-hidden"
                tabindex="-1"
                aria-hidden="true"
-               data-modal-products-required
-               value="<?php echo empty($selectedProducts) ? '' : '1'; ?>"
+               data-modal-items-required
+               value="<?php echo empty($selectedItems) ? '' : '1'; ?>"
                required>
     <?php endif; ?>
 </div>
