@@ -136,6 +136,8 @@ class ProductModel extends ItemModel
                             $db->quoteName('a.similar'),
                             $db->quoteName('a.offers'),
                             $db->quoteName('a.services'),
+                            $db->quoteName('a.videos'),
+                            $db->quoteName('a.documents'),
                             $db->quoteName('a.width'),
                             $db->quoteName('a.height'),
                             $db->quoteName('a.depth'),
@@ -267,6 +269,8 @@ class ProductModel extends ItemModel
                 $data->metadata = new Registry($data->metadata);
                 $data->images = json_decode($data->images);
                 $data->equipment = json_decode($data->equipment);
+                $data->videos = json_decode($data->videos);
+                $data->documents = json_decode($data->documents);
 
                 // Устанавливаем полное наименование товара
                 $data->fullname = $data->prefix . ' ' . $data->manufacturer_title . ' ' . $data->title;
