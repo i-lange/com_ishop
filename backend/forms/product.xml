@@ -301,10 +301,11 @@
                 <field name="file"
                        type="media"
                        schemes="http,https,ftp,ftps,data,file"
-                       directory="/files"
                        types="documents"
                        validate="url"
                        relative="true"
+                       hide_none="1"
+                       default=""
                        label="COM_ISHOP_FIELD_FILE"/>
                 <field name="name"
                        type="text"
