@@ -734,6 +734,11 @@ class ProductModel extends ItemModel
         $db->setQuery($query);
         $ids = $db->loadColumn();
 
+        if (empty($ids)) {
+            $data->warehouses = [];
+            return;
+        }
+
         $model = $this
             ->bootComponent('com_ishop')
             ->getMVCFactory()
