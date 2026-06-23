@@ -694,6 +694,7 @@ class ProductModel extends ItemModel
                 $current->alias =  $part->alias;
                 $current->type =  $part->type;
                 $current->introtext = $part->introtext;
+                $current->images = $part->images;
                 $current->icon = $part->icon;
                 $current->cats_label = $part->attribs['cats_label'];
                 $current->cats_label_param = $part->attribs['cats_label_param'];
