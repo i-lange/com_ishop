@@ -268,6 +268,7 @@ class ProductsModel extends ListModel
                     $db->quoteName('a.prefix_id'),
                     $db->quoteName('a.title'),
                     $db->quoteName('a.alias'),
+                    $db->quoteName('a.introtext'),
                     $db->quoteName('a.checked_out'),
                     $db->quoteName('a.checked_out_time'),
                     $db->quoteName('a.catid'),
