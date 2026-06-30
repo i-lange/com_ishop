@@ -18,16 +18,17 @@
 			}
 
 			this.form.dataset.ishopCartPageBound = '1';
-			this.cartTotal = this.form.querySelector('[data-cart-total]');
-			this.cartTotalDiscount = this.form.querySelector('[data-cart-total-discount]');
-			this.cartPromoDiscount = this.form.querySelector('[data-cart-promo-discount]');
-			this.cartSummary = this.form.querySelector('[data-cart-summary]');
+			this.cartTotals = Array.from(this.form.querySelectorAll('[data-cart-total]'));
+			this.cartTotalDiscounts = Array.from(this.form.querySelectorAll('[data-cart-total-discount]'));
+			this.cartPromoDiscounts = Array.from(this.form.querySelectorAll('[data-cart-promo-discount]'));
+			this.cartSummaries = Array.from(this.form.querySelectorAll('[data-cart-summary]'));
 			this.promocodeInput = this.form.querySelector('[data-cart-promocode]');
 			this.promocodeMessage = this.form.querySelector('[data-cart-promocode-message]');
 			this.promocodeButton = this.form.querySelector('[data-cart-apply-promocode]');
 			this.selectAll = this.form.querySelector('[data-cart-select-all]');
 			this.removeSelectedButton = this.form.querySelector('[data-cart-remove-selected]');
 			this.checkoutButtons = Array.from(this.form.querySelectorAll('button[type="submit"], input[type="submit"]'));
+			this.mobileActions = this.form.querySelector('[data-cart-mobile-actions]');
 			this.removedAlert = this.form.querySelector('[data-cart-removed-alert]');
 			this.removedMessage = this.form.querySelector('[data-cart-removed-message]');
 			this.lastRemovedItems = [];
@@ -277,6 +278,8 @@
 			this.checkoutButtons.forEach(button => {
 				button.disabled = checkedCount === 0;
 			});
+
+			this.updateMobileActionsVisibility();
 		},
 
 		async reloadSelectedProducts() {
@@ -329,21 +332,43 @@
 		},
 
 		setCartTotals(data = {}) {
-			if (this.cartTotal && data.total !== undefined) {
-				this.cartTotal.textContent = this.formatNumber(data.total);
+			if (data.total !== undefined) {
+				this.setTextContent(this.cartTotals, this.formatNumber(data.total));
 			}
 
-			if (this.cartTotalDiscount && data.total_discount !== undefined) {
-				this.cartTotalDiscount.textContent = this.formatNumber(data.total_discount);
+			if (data.total_discount !== undefined) {
+				this.setTextContent(this.cartTotalDiscounts, this.formatNumber(data.total_discount));
 			}
 
-			if (this.cartPromoDiscount && data.promo_discount !== undefined) {
-				this.cartPromoDiscount.textContent = this.formatNumber(data.promo_discount);
+			if (data.promo_discount !== undefined) {
+				this.setTextContent(this.cartPromoDiscounts, this.formatNumber(data.promo_discount));
 			}
 
-			if (this.cartSummary && data.summary !== undefined) {
-				this.cartSummary.textContent = this.formatNumber(data.summary);
+			if (data.summary !== undefined) {
+				this.setTextContent(this.cartSummaries, this.formatNumber(data.summary));
 			}
+
+			this.updateMobileActionsVisibility(data.summary === undefined ? null : data.summary);
+		},
+
+		setTextContent(elements, value) {
+			elements.forEach(element => {
+				element.textContent = value;
+			});
+		},
+
+		updateMobileActionsVisibility(summary = null) {
+			if (!this.mobileActions) {
+				return;
+			}
+
+			const hasSelectedProducts = this.getSelectedCheckboxes().length > 0;
+			const normalizedSummary = summary === null
+				? this.getElementNumber(this.cartSummaries[0])
+				: Number(summary);
+			const isVisible = hasSelectedProducts && Number.isFinite(normalizedSummary) && normalizedSummary > 0;
+
+			this.mobileActions.hidden = !isVisible;
 		},
 
 		setCartInfo(data = {}) {
@@ -433,6 +458,19 @@
 			}
 
 			return number.toLocaleString('ru-RU');
+		},
+
+		getElementNumber(element) {
+			if (!element) {
+				return 0;
+			}
+
+			const value = String(element.textContent || '')
+				.replace(/\s+/g, '')
+				.replace(',', '.');
+			const number = Number(value);
+
+			return Number.isFinite(number) ? number : 0;
 		},
 
 		normalizeCount(value) {
