@@ -19,7 +19,9 @@ use Joomla\CMS\Router\Route;
 
 $wa = Factory::getApplication()->getDocument()->getWebAssetManager();
 $wa->useScript('com_ishop.cart');
+$wa->useScript('bootstrap.alert');
 $currency = strtoupper($this->params->get('defaultCurrency', 'BYN'));
+$count = count($this->cart->products);
 
 if ($this->cart->total > 0) {
     $dataLayerItems = [];
@@ -58,7 +60,7 @@ if ($this->cart->total > 0) {
             <span class="active"><?php echo $this->active_zone->title; ?></span>
         </div>
     <?php endif; ?>
-    <?php if (count($this->cart->products) > 0) : ?>
+    <?php if ($count > 0) : ?>
     <form class="module-cart-grid"
           id="cart-submit"
           action="<?php echo Route::_(RouteHelper::getCheckoutRoute()); ?>"
@@ -66,6 +68,42 @@ if ($this->cart->total > 0) {
           name="cart-submit"
           data-cart-empty-text="<?php echo $this->escape(Text::_('COM_ISHOP_CART_NULL')); ?>">
         <div>
+            <div class="cart-removed-alert alert alert-dismissible d-none align-items-start justify-content-between gap-3 mb-3"
+                 role="alert"
+                 data-cart-removed-alert
+                 data-cart-removed-text="<?php echo $this->escape(Text::_('COM_ISHOP_CART_REMOVED_NOTICE')); ?>">
+                <div>
+                    <div data-cart-removed-message></div>
+                    <button class="btn btn-link p-0 fw-semibold text-primary text-decoration-none"
+                            type="button"
+                            data-cart-restore>
+                        <?php echo Text::_('COM_ISHOP_CART_UNDO'); ?>
+                    </button>
+                </div>
+                <button type="button"
+                        class="btn-close position-static flex-shrink-0 p-0"
+                        data-cart-alert-close
+                        aria-label="<?php echo Text::_('JCLOSE'); ?>"></button>
+            </div>
+
+            <div class="cart-toolbar d-flex align-items-center justify-content-between gap-3 py-2 mb-2">
+                <div class="form-check d-flex align-items-center gap-2 mb-0">
+                    <input class="form-check-input mt-0"
+                           id="cart_select_all"
+                           type="checkbox"
+                           data-cart-select-all
+                           checked>
+                    <label class="form-check-label" for="cart_select_all">
+                        <?php echo Text::_('COM_ISHOP_CART_SELECT_ALL'); ?>
+                    </label>
+                </div>
+                <button class="btn btn-link p-0 text-primary text-decoration-none"
+                        type="button"
+                        data-cart-remove-selected>
+                    <?php echo Text::_('COM_ISHOP_CART_REMOVE_SELECTED'); ?>
+                </button>
+            </div>
+
             <?php foreach ($this->cart->products as $key_id => $product) : ?>
                 <div class="module-cart-item<?php echo ($product->available) ? '' : ' not_available'; ?>" data-product-incart-id="<?php echo $product->id; ?>">
                     <div class="cart-item_top">
@@ -89,7 +127,8 @@ if ($this->cart->total > 0) {
                                    type="checkbox"
                                    name="products[]"
                                    checked="checked"
-                                   value="<?php echo $product->id; ?>">
+                                   value="<?php echo $product->id; ?>"
+                                   data-cart-item-checkbox>
                             <?php endif; ?>
                         </div>
                         <div class="cart-item_title">
@@ -163,18 +202,46 @@ if ($this->cart->total > 0) {
             <div class="module-cart-checkout">
                 <div class="module-cart-info">
                     <h3><?php echo Text::_('COM_ISHOP_CART_YOUR_ORDER'); ?></h3>
+                    <div class="cart-promocode mb-3">
+                        <label class="position-out" for="cart_promocode"><?php echo Text::_('COM_ISHOP_CART_PROMOCODE'); ?></label>
+                        <input class="form-control"
+                               id="cart_promocode"
+                               type="text"
+                               name="promocode"
+                               value="<?php echo $this->escape($this->cart->promocode ?? ''); ?>"
+                               placeholder="<?php echo Text::_('COM_ISHOP_CART_PROMOCODE'); ?>"
+                               autocomplete="off"
+                               data-cart-promocode>
+                        <button class="btn btn-primary"
+                                type="button"
+                                title="<?php echo Text::_('COM_ISHOP_CART_APPLY_PROMOCODE'); ?>"
+                                aria-label="<?php echo Text::_('COM_ISHOP_CART_APPLY_PROMOCODE'); ?>"
+                                data-cart-apply-promocode>
+                            <span class="position-out"><?php echo Text::_('COM_ISHOP_CART_APPLY_PROMOCODE'); ?></span>
+                            <svg class="svg"><use href="/icons_v3.svg#arrow-right"/></svg>
+                        </button>
+                        <div class="form-text <?php echo empty($this->cart->promocode_message) ? 'd-none' : (($this->cart->promocode_valid ?? false) ? 'text-success' : 'text-danger'); ?>"
+                             data-cart-promocode-message>
+                            <?php echo $this->escape($this->cart->promocode_message ?? ''); ?>
+                        </div>
+                    </div>
+                    <div class="cart-summary-lines">
                     <div class="info-line">
                         <span><?php echo Text::_('COM_ISHOP_CART_SELECTED_TOTAL'); ?>:</span>
                         <span class="cart-price"><span data-cart-total><?php echo PriceHelper::renderPrice($this->cart->total, false); ?></span><span class="currency"><?php echo $currency; ?></span></span>
                     </div>
                     <div class="info-line">
-                        <span><?php echo Text::_('COM_ISHOP_CART_SELECTED_SALE'); ?>:</span>
+                        <span><?php echo Text::_('COM_ISHOP_CART_ACTION_DISCOUNT'); ?>:</span>
                         <span class="cart-price">-<span data-cart-total-discount><?php echo PriceHelper::renderPrice($this->cart->total_discount, false); ?></span><span class="currency"><?php echo $currency; ?></span></span>
                     </div>
-                    <hr>
-                    <div class="info-line h3">
+                    <div class="info-line">
+                        <span><?php echo Text::_('COM_ISHOP_CART_PROMO_DISCOUNT'); ?>:</span>
+                        <span class="cart-price">-<span data-cart-promo-discount><?php echo PriceHelper::renderPrice($this->cart->promo_discount ?? 0, false); ?></span><span class="currency"><?php echo $currency; ?></span></span>
+                    </div>
+                    <div class="info-line h3 info-line-total">
                         <span><?php echo Text::_('COM_ISHOP_CART_SUM'); ?>:</span>
                         <span class="cart-price"><span data-cart-summary><?php echo PriceHelper::renderPrice($this->cart->summary, false); ?></span><span class="currency"><?php echo $currency; ?></span></span>
+                    </div>
                     </div>
                 </div>
                 <?php if ($this->cart->total > 0) : ?>

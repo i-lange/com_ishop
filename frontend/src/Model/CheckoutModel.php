@@ -11,12 +11,12 @@ namespace Ilange\Component\Ishop\Site\Model;
 
 defined('_JEXEC') or die;
 
+use Ilange\Component\Ishop\Site\Service\PromoCodeService;
 use Exception;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Model\BaseDatabaseModel;
-use Joomla\Database\ParameterType;
 
 /**
  * Модель оформления заказа
@@ -24,14 +24,6 @@ use Joomla\Database\ParameterType;
  */
 class CheckoutModel extends BaseDatabaseModel
 {
-    /**
-     * Контекст user state для примененного промокода checkout.
-     *
-     * @var string
-     * @since 1.0.11
-     */
-    private const PROMO_CODE_STATE = 'com_ishop.checkout.code';
-
     /**
      * Метод для автоматического заполнения модели
      * Вызов getState в этом методе приведет к рекурсии
@@ -68,7 +60,7 @@ class CheckoutModel extends BaseDatabaseModel
         $cart = $this->getMVCFactory()->createModel('Cart', 'Site');
         $pks = $this->getState('checkout.list', []);
 
-        $checkout = $cart->getCart($pks, false);
+        $checkout = $cart->getCart($pks, false, false);
 
         $date = new \DateTime();
         foreach ($checkout->products as $i => $product) {
@@ -161,14 +153,15 @@ class CheckoutModel extends BaseDatabaseModel
 
         $discount = null;
         $code = trim((string) ($data['code'] ?? ''));
+        $promoCodeService = new PromoCodeService($this->getDatabase());
 
         if ($code === '') {
-            $code = $this->getStoredPromoCode();
+            $code = $promoCodeService->getStoredCode();
         }
 
         if ($code !== '') {
-            $discount = $this->calculatePromoCode($code, $checkout);
-            $this->storePromoCode($discount['code']);
+            $discount = $promoCodeService->calculatePromoCode($code, $checkout);
+            $promoCodeService->storeCode($discount['code']);
         }
 
         $orderData = $this->buildOrderData($data, $checkout, $paymentData, $deliveryData, $discount);
@@ -178,7 +171,7 @@ class CheckoutModel extends BaseDatabaseModel
             throw new Exception($table->getError() ?: Text::_('COM_ISHOP_CHECKOUT_SAVE_ERROR'), 500);
         }
 
-        $this->clearPromoCode();
+        (new PromoCodeService($this->getDatabase()))->clearCode();
 
         return [
             'orderId'  => (int) $table->id,
@@ -201,12 +194,13 @@ class CheckoutModel extends BaseDatabaseModel
      */
     public function applyCode(string $code): array
     {
-        $this->clearPromoCode();
+        $promoCodeService = new PromoCodeService($this->getDatabase());
+        $promoCodeService->clearCode();
 
         $checkout = $this->getPreparedCheckout();
-        $discount = $this->calculatePromoCode($code, $checkout);
+        $discount = $promoCodeService->calculatePromoCode($code, $checkout);
 
-        $this->storePromoCode($discount['code']);
+        $promoCodeService->storeCode($discount['code']);
 
         return $discount;
     }
@@ -393,198 +387,6 @@ class CheckoutModel extends BaseDatabaseModel
     }
 
     /**
-     * Находит, проверяет и рассчитывает промокод для текущего checkout.
-     *
-     * @param string $code     Промокод покупателя
-     * @param object $checkout Данные checkout
-     *
-     * @return array Результат применения промокода
-     * @throws Exception
-     * @since 1.0.11
-     */
-    private function calculatePromoCode(string $code, object $checkout): array
-    {
-        if (trim($code) === '') {
-            throw new Exception(Text::_('COM_ISHOP_CHECKOUT_CODE_REQUIRED'), 400);
-        }
-
-        $params = ComponentHelper::getParams('com_ishop');
-
-        if (!$params->get('discounts_use', 0)) {
-            throw new Exception(Text::_('COM_ISHOP_CHECKOUT_CODE_NOT_APPLICABLE'), 400);
-        }
-
-        foreach ($this->findPromoCodes($code) as $discount) {
-            $result = $this->buildPromoCodeResult($discount, $checkout);
-
-            if ($result !== null) {
-                return $result;
-            }
-        }
-
-        throw new Exception(Text::_('COM_ISHOP_CHECKOUT_CODE_NOT_APPLICABLE'), 400);
-    }
-
-    /**
-     * Загружает опубликованные записи промокода из базы данных.
-     *
-     * @param string $code Промокод покупателя
-     *
-     * @return array Данные скидок
-     * @throws Exception
-     * @since 1.0.11
-     */
-    private function findPromoCodes(string $code): array
-    {
-        $code = trim($code);
-
-        if ($code === '') {
-            throw new Exception(Text::_('COM_ISHOP_CHECKOUT_CODE_REQUIRED'), 400);
-        }
-
-        $db = $this->getDatabase();
-        $published = 1;
-        $type = 2;
-        $now = Factory::getDate()->toSql();
-        $normalizedCode = mb_strtolower($code);
-
-        $query = $db->getQuery(true)
-            ->select([
-                $db->quoteName('id'),
-                $db->quoteName('title'),
-                $db->quoteName('code'),
-                $db->quoteName('percent'),
-                $db->quoteName('products'),
-                $db->quoteName('cats'),
-                $db->quoteName('manufacturers'),
-                $db->quoteName('suppliers'),
-                $db->quoteName('min_price'),
-                $db->quoteName('min_amount'),
-            ])
-            ->from($db->quoteName('#__ishop_discounts'))
-            ->where($db->quoteName('state') . ' = :published')
-            ->where($db->quoteName('type') . ' = :type')
-            ->where('LOWER(' . $db->quoteName('code') . ') = :code')
-            ->where('(' . $db->quoteName('publish_up') . ' IS NULL OR ' . $db->quoteName('publish_up') . ' <= :publishUp)')
-            ->where('(' . $db->quoteName('publish_down') . ' IS NULL OR ' . $db->quoteName('publish_down') . ' >= :publishDown)')
-            ->bind(':published', $published, ParameterType::INTEGER)
-            ->bind(':type', $type, ParameterType::INTEGER)
-            ->bind(':code', $normalizedCode)
-            ->bind(':publishUp', $now)
-            ->bind(':publishDown', $now)
-            ->order([
-                $db->quoteName('percent') . ' DESC',
-                $db->quoteName('ordering') . ' ASC',
-                $db->quoteName('id') . ' ASC',
-            ]);
-
-        $db->setQuery($query);
-        $discounts = $db->loadObjectList();
-
-        if (empty($discounts)) {
-            throw new Exception(Text::_('COM_ISHOP_CHECKOUT_CODE_NOT_FOUND'), 404);
-        }
-
-        return $discounts;
-    }
-
-    /**
-     * Рассчитывает результат применения одной записи промокода.
-     *
-     * @param object $discount Данные промокода
-     * @param object $checkout Данные checkout
-     *
-     * @return array|null Результат применения или null, если запись не подходит
-     * @since 1.0.11
-     */
-    private function buildPromoCodeResult(object $discount, object $checkout): ?array
-    {
-        $percent = (float) $discount->percent;
-
-        if ($percent <= 0) {
-            return null;
-        }
-
-        if ((float) $discount->min_amount > 0 && (float) $checkout->summary < (float) $discount->min_amount) {
-            return null;
-        }
-
-        $products = [];
-        $amount = 0.0;
-
-        foreach ($checkout->products as $product) {
-            if (!$this->isProductAllowedByDiscount($product, $discount)) {
-                continue;
-            }
-
-            $quantity = (int) ($product->count ?? 1);
-            $price = $this->getProductPrice($product);
-            $lineTotal = $price * $quantity;
-            $lineDiscount = $this->roundPrice($lineTotal * $percent / 100);
-            $amount += $lineDiscount;
-
-            $products[] = [
-                'id'       => (int) $product->id,
-                'quantity' => $quantity,
-                'price'    => $this->roundPrice($price),
-                'total'    => $this->roundPrice($lineTotal),
-                'discount' => $lineDiscount,
-            ];
-        }
-
-        $amount = $this->roundPrice($amount);
-
-        if ($amount <= 0 || empty($products)) {
-            return null;
-        }
-
-        return [
-            'id'       => (int) $discount->id,
-            'title'    => (string) $discount->title,
-            'code'     => (string) $discount->code,
-            'percent'  => $this->roundPrice($percent),
-            'amount'   => $amount,
-            'products' => $products,
-            'summary'  => [
-                'before'   => $this->roundPrice((float) $checkout->summary),
-                'discount' => $amount,
-                'after'    => $this->roundPrice(max((float) $checkout->summary - $amount, 0)),
-                'currency' => $this->getCurrency(),
-            ],
-        ];
-    }
-
-    /**
-     * Проверяет, подходит ли товар под ограничения промокода.
-     *
-     * @param object $product  Данные товара
-     * @param object $discount Данные промокода
-     *
-     * @return bool Подходит ли товар
-     * @since 1.0.11
-     */
-    private function isProductAllowedByDiscount(object $product, object $discount): bool
-    {
-        if ((float) $discount->min_price > 0 && $this->getProductPrice($product) < (float) $discount->min_price) {
-            return false;
-        }
-
-        $products = $this->csvToIntegers((string) $discount->products);
-
-        if (!empty($products)) {
-            return in_array((int) $product->id, $products, true);
-        }
-
-        $cats = $this->csvToIntegers((string) $discount->cats);
-        $manufacturers = $this->csvToIntegers((string) $discount->manufacturers);
-        $suppliers = $this->csvToIntegers((string) $discount->suppliers);
-
-        return (empty($cats) || in_array((int) $product->catid, $cats, true))
-            && (empty($manufacturers) || in_array((int) $product->manufacturer_id, $manufacturers, true))
-            && (empty($suppliers) || in_array((int) ($product->supplier_id ?? 0), $suppliers, true));
-    }
-
-    /**
      * Подготавливает массив товаров для хранения в заказе.
      *
      * @param object $checkout Данные checkout
@@ -705,63 +507,6 @@ class CheckoutModel extends BaseDatabaseModel
         return ((float) ($product->sale_price ?? 0) > 0)
             ? (float) $product->sale_price
             : (float) ($product->price ?? 0);
-    }
-
-    /**
-     * Возвращает сохраненный в user state промокод.
-     *
-     * @return string Промокод
-     * @throws Exception
-     * @since 1.0.11
-     */
-    private function getStoredPromoCode(): string
-    {
-        return trim((string) Factory::getApplication()->getUserState(self::PROMO_CODE_STATE, ''));
-    }
-
-    /**
-     * Сохраняет примененный промокод в user state checkout.
-     *
-     * @param   string  $code  Промокод
-     *
-     * @return void
-     * @throws Exception
-     * @since 1.0.11
-     */
-    private function storePromoCode(string $code): void
-    {
-        Factory::getApplication()->setUserState(self::PROMO_CODE_STATE, trim($code));
-    }
-
-    /**
-     * Очищает примененный промокод из user state checkout.
-     *
-     * @return void
-     * @throws Exception
-     * @since 1.0.11
-     */
-    private function clearPromoCode(): void
-    {
-        Factory::getApplication()->setUserState(self::PROMO_CODE_STATE, '');
-    }
-
-    /**
-     * Преобразует строку идентификаторов через запятую в массив чисел.
-     *
-     * @param string $value Строка идентификаторов
-     *
-     * @return array Массив идентификаторов
-     * @since 1.0.11
-     */
-    private function csvToIntegers(string $value): array
-    {
-        if (trim($value) === '') {
-            return [];
-        }
-
-        $items = array_map('intval', explode(',', $value));
-
-        return array_values(array_filter($items, static fn (int $item): bool => $item > 0));
     }
 
     /**

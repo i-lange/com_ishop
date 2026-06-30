@@ -11,6 +11,7 @@ namespace Ilange\Component\Ishop\Site\Model;
 
 defined('_JEXEC') or die;
 
+use Ilange\Component\Ishop\Site\Service\PromoCodeService;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Multilanguage;
@@ -151,15 +152,27 @@ class CartModel extends BaseDatabaseModel
      * @throws \Exception
      * @since 1.0.0
      */
-    public function getCart(array $filter = [], bool $full = true)
-    {
+    public function getCart(
+        array $filter = [],
+        bool $full = true,
+        bool $applyPromoCode = true,
+        bool $clearInvalidPromoCode = true
+    ) {
         $cart = new \stdClass();
         $cart->products = [];
-        $cart->total = $cart->total_discount = $cart->summary = $cart->count = 0;
+        $cart->total = $cart->total_discount = $cart->summary = $cart->summary_before_promo = $cart->promo_discount = $cart->count = 0;
+        $cart->promo = null;
+        $cart->promo_code = $cart->promocode = '';
+        $cart->promo_valid = $cart->promocode_valid = false;
+        $cart->promo_message = $cart->promocode_message = '';
         $list = $this->getCartList();
         $pks = (!empty($filter)) ? $filter : array_keys($list);
 
         if (empty($pks)) {
+            if ($applyPromoCode) {
+                (new PromoCodeService($this->getDatabase()))->applyStoredCodeToCart($cart, $clearInvalidPromoCode);
+            }
+
             return $cart;
         }
 
@@ -207,6 +220,12 @@ class CartModel extends BaseDatabaseModel
 
             $cart->count += $count;
             $cart->products[$product->id] = $product;
+        }
+
+        $cart->summary_before_promo = $cart->summary;
+
+        if ($applyPromoCode) {
+            $cart = (new PromoCodeService($this->getDatabase()))->applyStoredCodeToCart($cart, $clearInvalidPromoCode);
         }
 
         return $cart;
@@ -388,5 +407,156 @@ class CartModel extends BaseDatabaseModel
 
         // Возвращаем данные обновленной корзины
         return $this->getCart([], false);
+    }
+
+    /**
+     * Удаляет из корзины несколько товаров за один запрос.
+     *
+     * @param array $ids Идентификаторы товаров для удаления.
+     *
+     * @return object|false объект с данными корзины.
+     * @throws \Exception
+     * @since 1.0.19
+     */
+    public function cartRemoveSelected(array $ids = [])
+    {
+        $params = ComponentHelper::getParams('com_ishop');
+        $use_cart = $params->get('use_cart', false);
+
+        if (!$use_cart) {
+            return false;
+        }
+
+        $ids = $this->normalizeProductIds($ids);
+
+        if (empty($ids)) {
+            return $this->getCart([], false);
+        }
+
+        $user = $this->getMVCFactory()->createModel('User', 'Site');
+        $data = $user->getItem();
+
+        if ($data === false) {
+            return false;
+        }
+
+        $cart = (new Registry($data->cart))->toArray();
+
+        foreach ($ids as $id) {
+            unset($cart[$id]);
+        }
+
+        $data->cart = (string) new Registry($cart);
+        $user->setData($data, 'cart');
+
+        return $this->getCart([], false);
+    }
+
+    /**
+     * Восстанавливает последнюю удаленную на странице группу товаров.
+     *
+     * @param array $items Пары товар => количество для восстановления.
+     *
+     * @return object|false объект с данными корзины.
+     * @throws \Exception
+     * @since 1.0.19
+     */
+    public function cartRestore(array $items = [])
+    {
+        $params = ComponentHelper::getParams('com_ishop');
+        $use_cart = $params->get('use_cart', false);
+
+        if (!$use_cart) {
+            return false;
+        }
+
+        $items = $this->normalizeRestoreItems($items);
+
+        if (empty($items)) {
+            return $this->getCart([], false);
+        }
+
+        $user = $this->getMVCFactory()->createModel('User', 'Site');
+        $data = $user->getItem();
+
+        if ($data === false) {
+            return false;
+        }
+
+        $cart = (new Registry($data->cart))->toArray();
+        $restored = [];
+
+        foreach ($items as $id => $quantity) {
+            if (!isset($cart[$id])) {
+                $restored[$id] = $quantity;
+            }
+        }
+
+        if (!empty($restored)) {
+            $cart = $restored + $cart;
+        }
+
+        $data->cart = (string) new Registry($cart);
+        $user->setData($data, 'cart');
+
+        return $this->getCart([], false);
+    }
+
+    /**
+     * Применяет или очищает промокод в сессии корзины.
+     *
+     * @param string $code Введенный покупателем промокод.
+     *
+     * @return object Данные корзины с результатом применения промокода.
+     * @throws \Exception
+     * @since 1.0.19
+     */
+    public function applyPromoCode(string $code): object
+    {
+        $cart = $this->getCart([], false, false);
+
+        return (new PromoCodeService($this->getDatabase()))->applySubmittedCodeToCart($cart, $code);
+    }
+
+    /**
+     * Приводит список идентификаторов товаров к уникальным положительным числам.
+     *
+     * @param array $ids Сырые идентификаторы товаров.
+     *
+     * @return array Нормализованные идентификаторы.
+     * @since 1.0.19
+     */
+    private function normalizeProductIds(array $ids): array
+    {
+        $ids = array_map('intval', $ids);
+        $ids = array_filter($ids, static fn (int $id): bool => $id > 0);
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Нормализует товары для восстановления в корзину.
+     *
+     * @param array $items Сырые пары товар => количество.
+     *
+     * @return array Нормализованный список товаров.
+     * @since 1.0.19
+     */
+    private function normalizeRestoreItems(array $items): array
+    {
+        $result = [];
+
+        foreach ($items as $id => $quantity) {
+            $id = (int) $id;
+            $quantity = (int) $quantity;
+
+            if ($id <= 0 || $quantity <= 0) {
+                continue;
+            }
+
+            $result[$id] = $quantity;
+        }
+
+        return $result;
     }
 }

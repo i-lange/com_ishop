@@ -20,14 +20,62 @@
 			this.form.dataset.ishopCartPageBound = '1';
 			this.cartTotal = this.form.querySelector('[data-cart-total]');
 			this.cartTotalDiscount = this.form.querySelector('[data-cart-total-discount]');
+			this.cartPromoDiscount = this.form.querySelector('[data-cart-promo-discount]');
 			this.cartSummary = this.form.querySelector('[data-cart-summary]');
+			this.promocodeInput = this.form.querySelector('[data-cart-promocode]');
+			this.promocodeMessage = this.form.querySelector('[data-cart-promocode-message]');
+			this.promocodeButton = this.form.querySelector('[data-cart-apply-promocode]');
+			this.selectAll = this.form.querySelector('[data-cart-select-all]');
+			this.removeSelectedButton = this.form.querySelector('[data-cart-remove-selected]');
+			this.checkoutButtons = Array.from(this.form.querySelectorAll('button[type="submit"], input[type="submit"]'));
+			this.removedAlert = this.form.querySelector('[data-cart-removed-alert]');
+			this.removedMessage = this.form.querySelector('[data-cart-removed-message]');
+			this.lastRemovedItems = [];
 			this.reloadRequestId = 0;
 
 			this.form.addEventListener('click', this.handleButtonClick.bind(this));
 			this.form.addEventListener('change', this.handleCheckboxChange.bind(this));
+
+			if (this.promocodeInput) {
+				this.promocodeInput.addEventListener('keydown', this.handlePromocodeKeydown.bind(this));
+			}
+
+			this.updateSelectionControls();
 		},
 
 		handleButtonClick(event) {
+			const applyPromocode = event.target.closest('[data-cart-apply-promocode]');
+
+			if (applyPromocode && this.form.contains(applyPromocode)) {
+				event.preventDefault();
+				this.applyPromocode();
+				return;
+			}
+
+			const removeSelected = event.target.closest('[data-cart-remove-selected]');
+
+			if (removeSelected && this.form.contains(removeSelected)) {
+				event.preventDefault();
+				this.removeSelectedProducts();
+				return;
+			}
+
+			const restore = event.target.closest('[data-cart-restore]');
+
+			if (restore && this.form.contains(restore)) {
+				event.preventDefault();
+				this.restoreRemovedProducts();
+				return;
+			}
+
+			const closeAlert = event.target.closest('[data-cart-alert-close]');
+
+			if (closeAlert && this.form.contains(closeAlert)) {
+				event.preventDefault();
+				this.hideRemovedAlert(true);
+				return;
+			}
+
 			const btn = event.target.closest('[data-cart-button]');
 
 			if (!btn) {
@@ -46,9 +94,24 @@
 		},
 
 		handleCheckboxChange(event) {
+			if (event.target.matches('[data-cart-select-all]')) {
+				this.toggleAllProducts(event.target.checked);
+				return;
+			}
+
 			if (event.target.matches('input[name="products[]"]')) {
+				this.updateSelectionControls();
 				this.reloadSelectedProducts();
 			}
+		},
+
+		handlePromocodeKeydown(event) {
+			if (event.key !== 'Enter') {
+				return;
+			}
+
+			event.preventDefault();
+			this.applyPromocode();
 		},
 
 		processButtonClick(btn, product) {
@@ -120,19 +183,30 @@
 			const formData = new FormData();
 
 			Object.entries(data).forEach(([key, value]) => {
-				if (value === undefined || value === null) {
-					return;
-				}
-
-				if (Array.isArray(value)) {
-					value.forEach(item => formData.append(`${key}[]`, item));
-					return;
-				}
-
-				formData.append(key, value);
+				this.appendFormValue(formData, key, value);
 			});
 
 			return formData;
+		},
+
+		appendFormValue(formData, key, value) {
+			if (value === undefined || value === null) {
+				return;
+			}
+
+			if (Array.isArray(value)) {
+				value.forEach(item => this.appendFormValue(formData, `${key}[]`, item));
+				return;
+			}
+
+			if (typeof value === 'object') {
+				Object.entries(value).forEach(([childKey, childValue]) => {
+					this.appendFormValue(formData, `${key}[${childKey}]`, childValue);
+				});
+				return;
+			}
+
+			formData.append(key, value);
 		},
 
 		parseResponse(responseText) {
@@ -154,19 +228,63 @@
 				product.removeAttribute('aria-busy');
 			}
 
-			product.querySelectorAll('[data-cart-button]').forEach(btn => {
-				btn.disabled = isPending;
+			product.querySelectorAll('[data-cart-button], input[name="products[]"]').forEach(control => {
+				control.disabled = isPending;
+			});
+		},
+
+		setPromocodePending(isPending) {
+			[this.promocodeInput, this.promocodeButton].forEach(control => {
+				if (control) {
+					control.disabled = isPending;
+				}
+			});
+		},
+
+		getProductCheckboxes() {
+			return Array.from(this.form.querySelectorAll('input[name="products[]"]'));
+		},
+
+		getSelectedCheckboxes() {
+			return this.getProductCheckboxes().filter(checkbox => checkbox.checked && !checkbox.disabled);
+		},
+
+		toggleAllProducts(checked) {
+			this.getProductCheckboxes().forEach(checkbox => {
+				if (!checkbox.disabled) {
+					checkbox.checked = checked;
+				}
+			});
+
+			this.updateSelectionControls();
+			this.reloadSelectedProducts();
+		},
+
+		updateSelectionControls() {
+			const checkboxes = this.getProductCheckboxes().filter(checkbox => !checkbox.disabled);
+			const checkedCount = checkboxes.filter(checkbox => checkbox.checked).length;
+
+			if (this.selectAll) {
+				this.selectAll.disabled = checkboxes.length === 0;
+				this.selectAll.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
+				this.selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+			}
+
+			if (this.removeSelectedButton) {
+				this.removeSelectedButton.disabled = checkedCount === 0;
+			}
+
+			this.checkoutButtons.forEach(button => {
+				button.disabled = checkedCount === 0;
 			});
 		},
 
 		async reloadSelectedProducts() {
 			const requestId = ++this.reloadRequestId;
-			const selectedProducts = Array.from(
-				this.form.querySelectorAll('input[name="products[]"]:checked')
-			).map(checkbox => checkbox.value);
+			const selectedProducts = this.getSelectedCheckboxes().map(checkbox => checkbox.value);
 
 			if (selectedProducts.length === 0) {
-				this.setCartTotals({ total: 0, total_discount: 0, summary: 0 });
+				this.setCartTotals({ total: 0, total_discount: 0, promo_discount: 0, summary: 0 });
 				return;
 			}
 
@@ -177,6 +295,7 @@
 
 				if (requestId === this.reloadRequestId) {
 					this.setCartTotals(response.data);
+					this.updatePromocodeState(response.data, false);
 				}
 			} catch (error) {
 				console.error('Cart reload error:', error);
@@ -210,21 +329,26 @@
 		},
 
 		setCartTotals(data = {}) {
-			if (this.cartTotal) {
+			if (this.cartTotal && data.total !== undefined) {
 				this.cartTotal.textContent = this.formatNumber(data.total);
 			}
 
-			if (this.cartTotalDiscount) {
+			if (this.cartTotalDiscount && data.total_discount !== undefined) {
 				this.cartTotalDiscount.textContent = this.formatNumber(data.total_discount);
 			}
 
-			if (this.cartSummary) {
+			if (this.cartPromoDiscount && data.promo_discount !== undefined) {
+				this.cartPromoDiscount.textContent = this.formatNumber(data.promo_discount);
+			}
+
+			if (this.cartSummary && data.summary !== undefined) {
 				this.cartSummary.textContent = this.formatNumber(data.summary);
 			}
 		},
 
 		setCartInfo(data = {}) {
 			this.updateCartTotals(data);
+			this.updatePromocodeState(data, true);
 			this.updateCartModules(data.count);
 			this.dispatchCartUpdated(data);
 		},
@@ -239,9 +363,28 @@
 		},
 
 		hasPartialSelection() {
-			const checkboxes = Array.from(this.form.querySelectorAll('input[name="products[]"]'));
+			const checkboxes = this.getProductCheckboxes();
 
 			return checkboxes.length > 0 && checkboxes.some(checkbox => !checkbox.checked);
+		},
+
+		updatePromocodeState(data = {}, updateInput = true) {
+			const code = data.promocode ?? data.promo_code;
+			const message = data.promocode_message ?? data.promo_message ?? '';
+			const valid = Boolean(data.promocode_valid ?? data.promo_valid);
+
+			if (updateInput && this.promocodeInput && code !== undefined) {
+				this.promocodeInput.value = code;
+			}
+
+			if (!this.promocodeMessage) {
+				return;
+			}
+
+			this.promocodeMessage.textContent = message;
+			this.promocodeMessage.classList.toggle('d-none', message === '');
+			this.promocodeMessage.classList.toggle('text-success', message !== '' && valid);
+			this.promocodeMessage.classList.toggle('text-danger', message !== '' && !valid);
 		},
 
 		updateCartModules(count) {
@@ -298,19 +441,207 @@
 			return Number.isFinite(count) && count >= 0 ? count : 0;
 		},
 
+		collectRemovedProducts(products) {
+			return products.map((product, index) => {
+				const productId = Number(product.dataset.productIncartId) || 0;
+
+				return {
+					id: productId,
+					index,
+					node: product,
+					parent: product.parentNode,
+					placeholder: null,
+					quantity: this.getProductQuantity(product),
+				};
+			}).filter(item => item.id > 0);
+		},
+
+		getProductQuantity(product) {
+			const quantityInput = product.querySelector('[data-quantity]');
+			const quantity = Number.parseInt(quantityInput?.value || '1', 10);
+
+			return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+		},
+
+		detachRemovedItems(items) {
+			items.forEach(item => {
+				if (!item.parent || !item.node.parentNode) {
+					return;
+				}
+
+				const placeholder = document.createComment('com_ishop_cart_removed');
+
+				item.parent.insertBefore(placeholder, item.node);
+				item.placeholder = placeholder;
+				item.node.remove();
+			});
+		},
+
+		restoreRemovedNodes(items) {
+			this.removeGeneratedEmptyState();
+			this.form.hidden = false;
+
+			items
+				.slice()
+				.sort((a, b) => a.index - b.index)
+				.forEach(item => {
+					if (item.placeholder?.parentNode) {
+						item.placeholder.parentNode.insertBefore(item.node, item.placeholder);
+						item.placeholder.remove();
+					} else if (item.parent) {
+						item.parent.append(item.node);
+					}
+
+					item.placeholder = null;
+					this.setProductPending(item.node, false);
+				});
+		},
+
+		clearRemovedItems(removePlaceholders = true) {
+			if (removePlaceholders) {
+				this.lastRemovedItems.forEach(item => {
+					if (item.placeholder?.parentNode) {
+						item.placeholder.remove();
+					}
+				});
+			}
+
+			this.lastRemovedItems = [];
+		},
+
+		showRemovedAlert(items) {
+			this.lastRemovedItems = items;
+
+			if (!this.removedAlert) {
+				return;
+			}
+
+			const count = items.reduce((total, item) => total + item.quantity, 0);
+			const template = this.removedAlert.dataset.cartRemovedText || '';
+
+			if (this.removedMessage) {
+				this.removedMessage.textContent = template.includes('%d')
+					? template.replace('%d', String(count))
+					: `${template} ${count}`;
+			}
+
+			this.removedAlert.classList.remove('d-none');
+			this.removedAlert.classList.add('d-flex', 'show');
+		},
+
+		hideRemovedAlert(clearItems = false) {
+			if (this.removedAlert) {
+				this.removedAlert.classList.add('d-none');
+				this.removedAlert.classList.remove('d-flex', 'show');
+			}
+
+			if (clearItems) {
+				this.clearRemovedItems(true);
+				this.updateEmptyState();
+			}
+		},
+
 		async removeProduct(productId, product) {
+			const removedItems = this.collectRemovedProducts([product]);
+
+			if (removedItems.length === 0) {
+				return;
+			}
+
+			this.clearRemovedItems(true);
+			this.hideRemovedAlert(false);
 			this.setProductPending(product, true);
 
 			try {
 				const response = await this.sendRequest('remove', { product_id: productId });
 
-				product.remove();
+				this.detachRemovedItems(removedItems);
+				this.showRemovedAlert(removedItems);
 				this.setCartInfo(response.data);
-				this.trackEcommerce('remove_from_cart', productId, 1);
+				this.trackRemovedItems(removedItems);
+				this.updateSelectionControls();
 				this.updateEmptyState();
 			} catch (error) {
 				console.error('Cart remove error:', error);
 				this.setProductPending(product, false);
+			}
+		},
+
+		async removeSelectedProducts() {
+			const selectedCheckboxes = this.getSelectedCheckboxes();
+			const products = selectedCheckboxes
+				.map(checkbox => checkbox.closest('[data-product-incart-id]'))
+				.filter(Boolean);
+			const removedItems = this.collectRemovedProducts(products);
+
+			if (removedItems.length === 0) {
+				return;
+			}
+
+			this.clearRemovedItems(true);
+			this.hideRemovedAlert(false);
+			products.forEach(product => this.setProductPending(product, true));
+
+			try {
+				const response = await this.sendRequest('removeSelected', {
+					product_ids: removedItems.map(item => item.id),
+				});
+
+				this.detachRemovedItems(removedItems);
+				this.showRemovedAlert(removedItems);
+				this.setCartInfo(response.data);
+				this.trackRemovedItems(removedItems);
+				this.updateSelectionControls();
+				this.updateEmptyState();
+			} catch (error) {
+				console.error('Cart remove selected error:', error);
+				products.forEach(product => this.setProductPending(product, false));
+			}
+		},
+
+		async restoreRemovedProducts() {
+			if (this.lastRemovedItems.length === 0) {
+				return;
+			}
+
+			const restoreItems = {};
+
+			this.lastRemovedItems.forEach(item => {
+				restoreItems[item.id] = item.quantity;
+			});
+
+			try {
+				const response = await this.sendRequest('restore', { restore_items: restoreItems });
+				const restoredItems = this.lastRemovedItems.slice();
+
+				this.restoreRemovedNodes(restoredItems);
+				restoredItems.forEach(item => this.setProductInfo(item.id, item.node, response.data));
+				this.clearRemovedItems(false);
+				this.hideRemovedAlert(false);
+				this.setCartInfo(response.data);
+				this.updateSelectionControls();
+			} catch (error) {
+				console.error('Cart restore error:', error);
+			}
+		},
+
+		async applyPromocode() {
+			if (!this.promocodeInput) {
+				return;
+			}
+
+			this.setPromocodePending(true);
+
+			try {
+				const response = await this.sendRequest('promocode', {
+					promocode: this.promocodeInput.value.trim(),
+				});
+
+				this.setCartInfo(response.data);
+			} catch (error) {
+				console.error('Cart promocode error:', error);
+			} finally {
+				this.setPromocodePending(false);
 			}
 		},
 
@@ -334,6 +665,7 @@
 				}
 
 				this.setCartInfo(response.data);
+				this.updateSelectionControls();
 				this.trackEcommerce(delta > 0 ? 'add_to_cart' : 'remove_from_cart', productId, 1);
 			} catch (error) {
 				console.error('Cart quantity error:', error);
@@ -341,8 +673,21 @@
 			}
 		},
 
+		trackRemovedItems(items) {
+			items.forEach(item => {
+				this.trackEcommerce('remove_from_cart', item.id, item.quantity);
+			});
+		},
+
 		updateEmptyState() {
 			if (this.form.querySelector('[data-product-incart-id]')) {
+				return;
+			}
+
+			if (this.lastRemovedItems.length > 0) {
+				this.removeGeneratedEmptyState();
+				this.form.hidden = false;
+
 				return;
 			}
 
@@ -350,6 +695,7 @@
 			const empty = document.createElement('div');
 
 			empty.className = 'module-cart-empty';
+			empty.dataset.cartGeneratedEmpty = '1';
 
 			if (emptyText) {
 				const text = document.createElement('p');
@@ -360,6 +706,10 @@
 
 			this.form.after(empty);
 			this.form.hidden = true;
+		},
+
+		removeGeneratedEmptyState() {
+			document.querySelectorAll('[data-cart-generated-empty]').forEach(empty => empty.remove());
 		},
 
 		dispatchCartUpdated(data) {

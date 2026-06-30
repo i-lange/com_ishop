@@ -131,6 +131,105 @@ class CartController extends BaseController
     }
 
     /**
+     * Удаляет выбранные товары из корзины.
+     *
+     * @return void
+     * @throws Exception
+     * @since 1.0.19
+     */
+    public function removeSelected()
+    {
+        $this->app->allowCache(false);
+
+        $productIds = $this->input->post->get('product_ids', [], 'array');
+        $productIds = array_values(
+            array_filter(
+                array_map('intval', (array) $productIds),
+                static fn ($productId) => $productId > 0
+            )
+        );
+
+        try {
+            $this->requireValidPostToken();
+
+            $result = $this
+                ->getModel('Cart', 'Site')
+                ->cartRemoveSelected($productIds);
+
+            if ($result === false) {
+                echo new JsonResponse(false, Text::_('COM_ISHOP_CART_ERROR'), true);
+
+                return;
+            }
+
+            echo new JsonResponse($result);
+        }
+        catch(Exception $e) {
+            echo new JsonResponse($e);
+        }
+    }
+
+    /**
+     * Восстанавливает товары, удаленные последним действием на странице корзины.
+     *
+     * @return void
+     * @throws Exception
+     * @since 1.0.19
+     */
+    public function restore()
+    {
+        $this->app->allowCache(false);
+
+        $items = $this->input->post->get('restore_items', [], 'array');
+
+        try {
+            $this->requireValidPostToken();
+
+            $result = $this
+                ->getModel('Cart', 'Site')
+                ->cartRestore((array) $items);
+
+            if ($result === false) {
+                echo new JsonResponse(false, Text::_('COM_ISHOP_CART_ERROR'), true);
+
+                return;
+            }
+
+            echo new JsonResponse($result);
+        }
+        catch(Exception $e) {
+            echo new JsonResponse($e);
+        }
+    }
+
+    /**
+     * Применяет или очищает промокод корзины.
+     *
+     * @return void
+     * @throws Exception
+     * @since 1.0.19
+     */
+    public function promocode()
+    {
+        $this->app->allowCache(false);
+
+        $code = $this->input->post->getString('promocode', $this->input->post->getString('code', ''));
+
+        try {
+            $this->requireValidPostToken();
+
+            $result = $this
+                ->getModel('Cart', 'Site')
+                ->applyPromoCode($code);
+
+            echo new JsonResponse($result);
+        }
+        catch(Exception $e) {
+            echo new JsonResponse($e);
+        }
+    }
+
+    /**
      * Пересчитывает метрики корзины
      * исходя из текущих выбранных товаров
      * для оформления заказа
@@ -157,7 +256,7 @@ class CartController extends BaseController
 
             $result = $this
                 ->getModel('Cart', 'Site')
-                ->getCart($filter_products, false);
+                ->getCart($filter_products, false, true, false);
 
             if ($result === false) {
                 echo new JsonResponse($result, Text::_('COM_ISHOP_CART_ERROR'), true);
