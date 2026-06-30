@@ -86,7 +86,7 @@ final class PromoCodeService
                 $this->clearCode();
             }
 
-            $cart->promo_message = Text::_('COM_ISHOP_CART_PROMOCODE_INVALID');
+            $cart->promo_message = $this->getCartErrorMessage($exception);
             $cart->promocode_message = $cart->promo_message;
 
             return $cart;
@@ -118,7 +118,7 @@ final class PromoCodeService
 
             return $this->applyDiscountToCart($cart, $discount, Text::_('COM_ISHOP_CART_PROMOCODE_APPLIED'));
         } catch (Exception $exception) {
-            $cart->promo_message = Text::_('COM_ISHOP_CART_PROMOCODE_INVALID');
+            $cart->promo_message = $this->getCartErrorMessage($exception);
             $cart->promocode_message = $cart->promo_message;
 
             return $cart;
@@ -239,6 +239,23 @@ final class PromoCodeService
         $cart->promocode_valid = false;
         $cart->promo_message = '';
         $cart->promocode_message = '';
+    }
+
+    /**
+     * Возвращает сообщение корзины для ошибки применения промокода.
+     *
+     * @param   Exception  $exception  Ошибка проверки промокода.
+     *
+     * @return string Сообщение для интерфейса корзины.
+     * @since 1.0.19
+     */
+    private function getCartErrorMessage(Exception $exception): string
+    {
+        if ($exception->getMessage() === Text::_('COM_ISHOP_CHECKOUT_CODE_NOT_APPLICABLE')) {
+            return Text::_('COM_ISHOP_CART_PROMOCODE_NOT_APPLICABLE');
+        }
+
+        return Text::_('COM_ISHOP_CART_PROMOCODE_INVALID');
     }
 
     /**
