@@ -445,10 +445,13 @@ class ProductModel extends ItemModel
                 $db->quoteName('field.id', 'field_id'),
                 $db->quoteName('field.title', 'field_title'),
                 $db->quoteName('field.type', 'field_type'),
+                $db->quoteName('field.compare', 'field_compare'),
                 $db->quoteName('field.images', 'field_images'),
                 $db->quoteName('field.icon', 'field_icon'),
                 $db->quoteName('field.color', 'field_color'),
                 $db->quoteName('field.unit', 'field_unit'),
+                $db->quoteName('a.value', 'field_raw_value'),
+                'COALESCE(' . $db->quoteName('value.weight') . ', 0) AS ' . $db->quoteName('field_value_weight'),
                 // Значение характеристик
                 'CASE ' .
                     // Для типа number конвертируем в строку

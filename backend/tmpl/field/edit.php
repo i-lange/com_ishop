@@ -72,6 +72,7 @@ $tmpl    = $tmpl ? '&tmpl=' . $tmpl : '';
             <div class="col-lg-3">
                 <?php echo LayoutHelper::render('joomla.edit.global', $this); ?>
                 <?php echo $this->form->renderField('type'); ?>
+                <?php echo $this->form->renderField('compare'); ?>
             </div>
         </div>
         <?php echo HTMLHelper::_('uitab.endTab'); ?>

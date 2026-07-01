@@ -59,6 +59,15 @@
             <option value="1">COM_ISHOP_FIELD_LIST</option>
             <option value="2">COM_ISHOP_FIELD_BOOL</option>
         </field>
+        <field name="compare"
+               type="list"
+               label="COM_ISHOP_FIELD_COMPARE_METHOD"
+               default="0"
+               validate="options">
+            <option value="-1">COM_ISHOP_FIELD_COMPARE_METHOD_LESS</option>
+            <option value="0">COM_ISHOP_FIELD_COMPARE_METHOD_NONE</option>
+            <option value="1">COM_ISHOP_FIELD_COMPARE_METHOD_MORE</option>
+        </field>
         <field name="unit"
                type="text"
                label="COM_ISHOP_FIELD_UNIT"/>
@@ -86,6 +95,12 @@
                        type="text"
                        maxlength="25"
                        label="COM_ISHOP_FIELD_ICON"/>
+                <field name="weight"
+                       type="number"
+                       default="0"
+                       filter="integer"
+                       label="COM_ISHOP_FIELD_VALUE_WEIGHT"
+                       description="COM_ISHOP_FIELD_VALUE_WEIGHT_DESC"/>
             </form>
         </field>
         <field name="created"

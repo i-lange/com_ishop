@@ -87,6 +87,9 @@ class ValueTable extends Table
             $this->alias = Factory::getDate()->format('Y-m-d-H-i-s');
         }
 
+        // Нормализуем вес значения для сравнения товаров.
+        $this->weight = (int)($this->weight ?? 0);
+
         // Устанавливаем некоторые поля по умолчанию, если создается новая запись
         if (!$this->id) {
             // Изображения по умолчанию пустая строка json
