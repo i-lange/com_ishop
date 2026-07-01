@@ -106,6 +106,12 @@ class FieldTable extends Table
             $this->fulltext = '';
         }
 
+        // Проверяем метод сравнения характеристики.
+        $this->compare = (int)($this->compare ?? 0);
+        if (!in_array($this->compare, [-1, 0, 1], true)) {
+            $this->compare = 0;
+        }
+
         // Устанавливаем некоторые поля по умолчанию, если создается новая запись
         if (!$this->id) {
             // Изображения по умолчанию пустая строка json

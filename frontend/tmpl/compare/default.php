@@ -57,7 +57,12 @@ $catId = $this->category_id;
             <div class="module-compare-products module-compare mt-3">
             <?php foreach ($this->compare[$catId]->products as $product) : ?>
                 <?php $product_price = ($product->sale_price > 0) ? $product->sale_price : $product->price; ?>
-                <article class="module-product" data-product-id="<?php echo $product->id; ?>">
+                <?php $compareRating = (int)($product->compare_rating ?? 0); ?>
+                <?php $compareWins = (int)($product->compare_wins ?? 0); ?>
+                <article class="module-product compare-rating-<?php echo $compareRating; ?>"
+                         data-product-id="<?php echo (int)$product->id; ?>"
+                         data-compare-wins="<?php echo $compareWins; ?>"
+                         data-compare-rating="<?php echo $compareRating; ?>">
                     <div class="position-relative">
                         <div class="product_image <?php echo ($product->discount_size > 0) ? 'product_image_sale' : '' ;?>">
                             <?php if (!empty($product->images->image_small)) : ?>
@@ -176,7 +181,8 @@ $catId = $this->category_id;
                             <div class="compare-field-title"><?php echo $field->title; ?></div>
                             <div class="module-compare compare-value-list<?php echo ($field->ismixed) ? ' mixed' : ''; ?>">
                                 <?php foreach ($products_list as $id) : ?>
-                                    <div>
+                                    <?php $isBest = isset($field->products[$id]) && !empty($field->products[$id]->is_best); ?>
+                                    <div<?php echo $isBest ? ' class="is-best"' : ''; ?>>
                                         <?php if (isset($field->products[$id])) : ?>
                                             <?php $value = $field->products[$id]; ?>
                                             <?php if ($field->type === 2) : ?>

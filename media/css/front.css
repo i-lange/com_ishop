@@ -1,0 +1,22 @@
+/*!
+ * @package    com_ishop
+ * @author     Pavel Lange <pavel@ilange.ru>
+ * @link       https://github.com/i-lange/com_ishop
+ * @copyright  (C) 2023 Pavel Lange <https://ilange.ru>
+ * @license    GNU General Public License version 2 or later
+ */
+.module-compare-products .module-product[class*=compare-rating-] {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.module-compare-products .module-product.compare-rating-1 {
+  box-shadow: 0 0 0 1px rgba(30, 126, 52, 0.25);
+}
+.module-compare-products .module-product.compare-rating-2 {
+  box-shadow: 0 0 0 2px rgba(30, 126, 52, 0.45);
+  transform: translateY(-2px);
+}
+
+.compare-value-list > .is-best {
+  font-weight: 600;
+  color: #146c43;
+}

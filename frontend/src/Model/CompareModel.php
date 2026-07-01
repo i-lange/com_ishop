@@ -11,6 +11,7 @@ namespace Ilange\Component\Ishop\Site\Model;
 
 defined('_JEXEC') or die;
 
+use Ilange\Component\Ishop\Site\Service\CompareScoringService;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Multilanguage;
@@ -341,6 +342,7 @@ class CompareModel extends BaseDatabaseModel
                         $fieldObj->title   = $field->field_title;
                         $fieldObj->type    = $field->field_type;
                         $fieldObj->unit    = $field->field_unit;
+                        $fieldObj->compare = (int) $field->field_compare;
                         $fieldObj->images  = $field->field_images;
                         $fieldObj->icon    = $field->field_icon;
                         $fieldObj->color   = $field->field_color;
@@ -356,6 +358,9 @@ class CompareModel extends BaseDatabaseModel
                     $fieldObj->images  = $field->field_value_images;
                     $fieldObj->icon    = $field->field_value_icon;
                     $fieldObj->hint    = $field->field_value_hint;
+                    $fieldObj->raw_value = $field->field_raw_value;
+                    $fieldObj->weight  = (int) $field->field_value_weight;
+                    $fieldObj->is_best = false;
                     $compare[$catId]->groups[$groupId]->fields[$fieldId]->products[$prodId] = $fieldObj;
                 }
 
@@ -369,6 +374,7 @@ class CompareModel extends BaseDatabaseModel
                             $fieldObj->title   = Text::_('COM_ISHOP_PRODUCT_' . $size);
                             $fieldObj->type    = 0; // число
                             $fieldObj->unit    = ($size == 'weight' || $size == 'weight_pkg') ? Text::_('COM_ISHOP_KG') : Text::_('COM_ISHOP_SM');
+                            $fieldObj->compare = 0;
                             $fieldObj->images  = '{}';
                             $fieldObj->icon    = $size;
                             $fieldObj->color   = '';
@@ -385,6 +391,9 @@ class CompareModel extends BaseDatabaseModel
                             $fieldObj->images  = '{}';
                             $fieldObj->icon    = '';
                             $fieldObj->hint    = '';
+                            $fieldObj->raw_value = (float) $product->$size;
+                            $fieldObj->weight  = 0;
+                            $fieldObj->is_best = false;
                             $compare[$catId]->groups[$groupId]->fields[$size]->products[$prodId] = $fieldObj;
                         }
                     }
@@ -400,6 +409,7 @@ class CompareModel extends BaseDatabaseModel
                             $fieldObj->title   = Text::_('COM_ISHOP_PRODUCT_' . $def);
                             $fieldObj->type    = 1; // список
                             $fieldObj->unit    = '';
+                            $fieldObj->compare = 0;
                             $fieldObj->images  = '{}';
                             $fieldObj->icon    = $def;
                             $fieldObj->color   = '';
@@ -424,6 +434,9 @@ class CompareModel extends BaseDatabaseModel
                             $fieldObj->images  = '{}';
                             $fieldObj->icon    = '';
                             $fieldObj->hint    = '';
+                            $fieldObj->raw_value = $product->$def;
+                            $fieldObj->weight  = 0;
+                            $fieldObj->is_best = false;
                             $compare[$catId]->groups[$groupId]->fields[$def]->products[$prodId] = $fieldObj;
                         }
                     }
@@ -439,6 +452,8 @@ class CompareModel extends BaseDatabaseModel
 
             // Подготовим данные активной категории
             if ($id === $catId) {
+                $this->addSystemCompareFields($category, $group_default);
+
                 // Если установлена основная группа характеристик,
                 // ее нужно переставить на первую позицию
                 if (isset($category->groups[$group_default])) {
@@ -475,6 +490,8 @@ class CompareModel extends BaseDatabaseModel
                         }
                     }
                 }
+
+                (new CompareScoringService())->score($category);
             }
         }
 
@@ -648,6 +665,192 @@ class CompareModel extends BaseDatabaseModel
         }
 
         return false;
+    }
+
+    /**
+     * Добавляет системные строки сравнения: цену, скидку и наличие.
+     *
+     * @param object $category       Данные активной категории
+     * @param int    $groupDefaultId Идентификатор основной группы характеристик
+     *
+     * @return void
+     *
+     * @since 1.0.24
+     */
+    private function addSystemCompareFields(object $category, int $groupDefaultId): void
+    {
+        if (empty($category->products) || !is_array($category->products)) {
+            return;
+        }
+
+        $groupId = ($groupDefaultId > 0 && isset($category->groups[$groupDefaultId])) ? $groupDefaultId : 'system_compare';
+
+        if (!isset($category->groups[$groupId])) {
+            $group = new \stdClass();
+            $group->title = Text::_('COM_ISHOP_COMPARE_SYSTEM_GROUP');
+            $group->images = '{}';
+            $group->icon = 'compare';
+            $group->fields = [];
+            $category->groups[$groupId] = $group;
+        }
+
+        $systemFields = [
+            'system_price' => [
+                'title' => Text::_('COM_ISHOP_PRODUCT_PRICE'),
+                'type' => 0,
+                'unit' => strtoupper((string) $this->getState('params')->get('defaultCurrency', 'BYN')),
+                'compare' => -1,
+                'icon' => 'price',
+                'system_key' => 'price',
+            ],
+            'system_discount' => [
+                'title' => Text::_('COM_ISHOP_COMPARE_DISCOUNT'),
+                'type' => 0,
+                'unit' => '%',
+                'compare' => 1,
+                'icon' => 'sales',
+                'system_key' => 'discount',
+            ],
+            'system_available' => [
+                'title' => Text::_('COM_ISHOP_COMPARE_AVAILABLE'),
+                'type' => 2,
+                'unit' => '',
+                'compare' => 1,
+                'icon' => 'stock',
+                'system_key' => 'available',
+            ],
+        ];
+
+        foreach ($systemFields as $fieldId => $config) {
+            $category->groups[$groupId]->fields[$fieldId] = $this->createSystemField($config);
+        }
+
+        foreach ($category->products as $productId => $product) {
+            $category->groups[$groupId]->fields['system_price']->products[$productId] = $this->createSystemValue(
+                $this->getProductComparePrice($product),
+                '{}',
+                ''
+            );
+            $category->groups[$groupId]->fields['system_discount']->products[$productId] = $this->createSystemValue(
+                $this->getProductCompareDiscount($product),
+                '{}',
+                ''
+            );
+            $category->groups[$groupId]->fields['system_available']->products[$productId] = $this->createSystemValue(
+                !empty($product->available) ? 1 : 0,
+                '{}',
+                '',
+                !empty($product->available) ? 'y' : 'n'
+            );
+        }
+    }
+
+    /**
+     * Создает объект системной характеристики для матрицы сравнения.
+     *
+     * @param array $config Настройки системной характеристики
+     *
+     * @return \stdClass
+     *
+     * @since 1.0.24
+     */
+    private function createSystemField(array $config): \stdClass
+    {
+        $field = new \stdClass();
+        $field->title = $config['title'];
+        $field->type = $config['type'];
+        $field->unit = $config['unit'];
+        $field->compare = $config['compare'];
+        $field->images = '{}';
+        $field->icon = $config['icon'];
+        $field->color = '';
+        $field->ismixed = false;
+        $field->products = [];
+        $field->is_system = true;
+        $field->system_key = $config['system_key'];
+
+        return $field;
+    }
+
+    /**
+     * Создает объект системного значения товара для матрицы сравнения.
+     *
+     * @param float|int        $rawValue     Сырое числовое значение
+     * @param string           $images       JSON-изображения значения
+     * @param string           $hint         Подсказка значения
+     * @param float|int|string $displayValue Отображаемое значение
+     *
+     * @return \stdClass
+     *
+     * @since 1.0.24
+     */
+    private function createSystemValue(
+        float|int $rawValue,
+        string $images,
+        string $hint,
+        float|int|string|null $displayValue = null
+    ): \stdClass
+    {
+        $value = new \stdClass();
+        $value->value = $displayValue ?? $rawValue;
+        $value->images = $images;
+        $value->icon = '';
+        $value->hint = $hint;
+        $value->raw_value = $rawValue;
+        $value->weight = 0;
+        $value->is_best = false;
+
+        return $value;
+    }
+
+    /**
+     * Возвращает фактическую цену товара для системного сравнения.
+     *
+     * @param object $product Данные товара
+     *
+     * @return float
+     *
+     * @since 1.0.24
+     */
+    private function getProductComparePrice(object $product): float
+    {
+        $salePrice = (float)($product->sale_price ?? 0);
+
+        return $salePrice > 0 ? $salePrice : (float)($product->price ?? 0);
+    }
+
+    /**
+     * Возвращает процент скидки товара для системного сравнения.
+     *
+     * @param object $product Данные товара
+     *
+     * @return float
+     *
+     * @since 1.0.24
+     */
+    private function getProductCompareDiscount(object $product): float
+    {
+        if (isset($product->discount_size)) {
+            return (float)$product->discount_size;
+        }
+
+        $oldPrice = (float)($product->old_price ?? 0);
+        $price = (float)($product->price ?? 0);
+        $salePrice = (float)($product->sale_price ?? 0);
+
+        if ($oldPrice > 0 && $salePrice > 0) {
+            return max(0, round(($oldPrice - $salePrice) / $oldPrice * 100));
+        }
+
+        if ($price > 0 && $salePrice > 0) {
+            return max(0, round(($price - $salePrice) / $price * 100));
+        }
+
+        if ($oldPrice > 0 && $price > 0) {
+            return max(0, round(($oldPrice - $price) / $oldPrice * 100));
+        }
+
+        return 0;
     }
 
     /**

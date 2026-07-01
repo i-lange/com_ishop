@@ -244,6 +244,7 @@ class FieldModel extends AdminModel
                     $db->quoteName('value'),
                     $db->quoteName('alias'),
                     $db->quoteName('icon'),
+                    $db->quoteName('weight'),
                 ])
                 ->from($db->quoteName('#__ishop_values'))
                 ->where($db->quoteName('field_id') . ' = :fieldId')
@@ -406,7 +407,7 @@ class FieldModel extends AdminModel
         if (parent::save($data)) {
             $fieldId = (int)$this->getState('field.id');
 
-            if ((int)($data['type'] ?? 0) === 1 && $fieldId > 0 && !empty($data['id'])) {
+            if ((int)($data['type'] ?? 0) === 1 && $fieldId > 0) {
                 return $this->saveValues($fieldId, (array)$values, (string)($data['language'] ?? '*'));
             }
 
@@ -493,6 +494,7 @@ class FieldModel extends AdminModel
                 'value'    => $value,
                 'alias'    => $alias,
                 'icon'     => $icon,
+                'weight'   => (int)($row['weight'] ?? 0),
                 'ordering' => $ordering++,
             ];
         }
@@ -603,6 +605,7 @@ class FieldModel extends AdminModel
             $table->alias    = $value['alias'];
             $table->field_id = $fieldId;
             $table->icon     = $value['icon'];
+            $table->weight   = $value['weight'];
             $table->ordering = $value['ordering'];
             $table->language = $language;
 
