@@ -46,8 +46,8 @@ class HtmlView extends BaseHtmlView
     {
         $this->state        = $this->get('State');
         $this->params       = $this->state->get('params');
-        $this->category_id  = $this->state->get('category_id');
         $this->compare      = $this->get('Compare');
+        $this->category_id  = $this->state->get('category_id');
 
         // Проверяем, есть ли ошибки
         if (count($errors = $this->get('Errors'))) {

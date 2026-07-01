@@ -227,8 +227,26 @@ class CompareModel extends BaseDatabaseModel
         // Получим полные данные товаров для сравнения
         $products = $this->getProducts($pks, $full);
 
+        // Если в списке остались только снятые с публикации или недоступные товары,
+        // показываем пустую страницу сравнения вместо обращения к отсутствующей категории.
+        if (empty($products)) {
+            Factory::getApplication()->setUserState('com_ishop.compare.category_id', 0);
+            $this->setState('category_id', 0);
+
+            return $compare;
+        }
+
         // Список категорий
-        $categories_ids = array_unique(array_column($products, 'catid'));
+        $categories_ids = array_values(
+            array_unique(
+                array_map(
+                    static function ($product) {
+                        return (int) $product->catid;
+                    },
+                    $products
+                )
+            )
+        );
         // Получаем массив stdClass категорий с полями:
         // id, title, alias, params
         // в качестве индексов выступают значения id
@@ -236,6 +254,30 @@ class CompareModel extends BaseDatabaseModel
             ->getMVCFactory()
             ->createModel('Categories', 'Site', ['ignore_request' => true])
             ->getListByIds($categories_ids);
+
+        // Активная категория должна существовать среди реально доступных товаров.
+        // Это важно, когда первым в сохраненном списке идет уже скрытый товар.
+        if ($catId <= 0 || !isset($compare[$catId])) {
+            $catId = 0;
+
+            foreach ($categories_ids as $categoryId) {
+                if (isset($compare[$categoryId])) {
+                    $catId = $categoryId;
+                    break;
+                }
+            }
+
+            if ($catId === 0) {
+                Factory::getApplication()->setUserState('com_ishop.compare.category_id', 0);
+                $this->setState('category_id', 0);
+
+                return [];
+            }
+
+            Factory::getApplication()->setUserState('com_ishop.compare.category_id', $catId);
+            $this->setState('category_id', $catId);
+        }
+
         unset($categories_ids);
 
         // Переместим активную категорию в начало массива
@@ -250,24 +292,25 @@ class CompareModel extends BaseDatabaseModel
         // Проходим по всем товарам, сохраняем список сравнения
         foreach ($products as $product) {
             $prodId = $product->id;
+            $prodCatId = (int) $product->catid;
 
             // Защитимся от несуществующих категорий
-            if (!isset($compare[$product->catid])) {
+            if (!isset($compare[$prodCatId])) {
                 continue;
             }
 
             // Устанавливаем основные свойства
-            if (!isset($compare[$product->catid]->products)) {
-                $compare[$product->catid]->products = [];
-                $compare[$product->catid]->groups = [];
-                $compare[$product->catid]->count = 0;
+            if (!isset($compare[$prodCatId]->products)) {
+                $compare[$prodCatId]->products = [];
+                $compare[$prodCatId]->groups = [];
+                $compare[$prodCatId]->count = 0;
             }
 
             // Подсчет товаров в списках
-            $compare[$product->catid]->count++;
+            $compare[$prodCatId]->count++;
 
             // Далее нас интересуют только товары из активной категории
-            if ($product->catid !== $catId) {
+            if ($prodCatId !== $catId) {
                 continue;
             }
 
