@@ -729,21 +729,7 @@
 				return;
 			}
 
-			const emptyText = this.form.dataset.cartEmptyText || '';
-			const empty = document.createElement('div');
-
-			empty.className = 'module-cart-empty';
-			empty.dataset.cartGeneratedEmpty = '1';
-
-			if (emptyText) {
-				const text = document.createElement('p');
-
-				text.textContent = emptyText;
-				empty.append(text);
-			}
-
-			this.form.after(empty);
-			this.form.hidden = true;
+			window.location.reload();
 		},
 
 		removeGeneratedEmptyState() {

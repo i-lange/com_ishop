@@ -1,8 +1,10 @@
 /.git
 /.github
 /.idea
+/build
 /docs
 /node_modules
+AGENTS.md
 opencode.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
