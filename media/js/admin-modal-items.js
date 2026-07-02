@@ -5,7 +5,9 @@ import JoomlaDialog from 'joomla.dialog';
   const listSelector = '[data-modal-items-list]';
   const itemSelector = '[data-modal-item]';
   const templateSelector = '[data-modal-items-template]';
-  const checkedSelector = '[data-modal-item-checkbox]:checked';
+  const itemCheckboxSelector = '[data-modal-item-checkbox]';
+  const checkedSelector = `${itemCheckboxSelector}:checked`;
+  const selectAllSelector = '[data-modal-items-check-all]';
   const messageType = 'com_ishop:modal-items-select';
 
   const translate = (key, fallback) => {
@@ -206,31 +208,66 @@ import JoomlaDialog from 'joomla.dialog';
 
   const setupModal = () => {
     const addButton = document.querySelector('[data-modal-items-add]');
+    const selectAll = document.querySelector(selectAllSelector);
 
-    if (!addButton || addButton.dataset.modalItemsBound === '1') {
+    if (!addButton && !selectAll) {
       return;
     }
 
-    addButton.dataset.modalItemsBound = '1';
-
-    addButton.addEventListener('click', event => {
-      event.preventDefault();
-
-      const items = Array.from(document.querySelectorAll(checkedSelector)).map(input => ({
-        id: input.value,
-        title: input.dataset.title || input.value,
-      }));
-
-      if (!items.length) {
-        window.alert(translate(addButton.dataset.emptySelectionKey, 'Select at least one item.'));
+    const updateSelectAll = () => {
+      if (!selectAll) {
         return;
       }
 
-      window.parent.postMessage({
-        messageType,
-        items,
-      }, window.location.origin);
-    });
+      const checkboxes = Array.from(document.querySelectorAll(itemCheckboxSelector));
+      const checkedCount = checkboxes.filter(input => input.checked).length;
+
+      selectAll.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
+      selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+    };
+
+    if (addButton && addButton.dataset.modalItemsBound !== '1') {
+      addButton.dataset.modalItemsBound = '1';
+
+      addButton.addEventListener('click', event => {
+        event.preventDefault();
+
+        const items = Array.from(document.querySelectorAll(checkedSelector)).map(input => ({
+          id: input.value,
+          title: input.dataset.title || input.value,
+        }));
+
+        if (!items.length) {
+          window.alert(translate(addButton.dataset.emptySelectionKey, 'Select at least one item.'));
+          return;
+        }
+
+        window.parent.postMessage({
+          messageType,
+          items,
+        }, window.location.origin);
+      });
+    }
+
+    if (selectAll && selectAll.dataset.modalItemsBound !== '1') {
+      selectAll.dataset.modalItemsBound = '1';
+
+      selectAll.addEventListener('change', () => {
+        document.querySelectorAll(itemCheckboxSelector).forEach(input => {
+          input.checked = selectAll.checked;
+        });
+
+        updateSelectAll();
+      });
+
+      document.addEventListener('change', event => {
+        if (event.target.closest(itemCheckboxSelector)) {
+          updateSelectAll();
+        }
+      });
+    }
+
+    updateSelectAll();
   };
 
   const setup = container => {

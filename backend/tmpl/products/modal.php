@@ -69,7 +69,10 @@ $selected  = array_filter(array_map('intval', explode(',', (string) $app->getInp
                     <tr>
                         <?php if ($multi) : ?>
                             <th scope="col" class="w-1 text-center">
-                                <span class="visually-hidden"><?php echo Text::_('JSELECT'); ?></span>
+                                <input type="checkbox"
+                                       class="form-check-input"
+                                       data-modal-items-check-all
+                                       aria-label="<?php echo $this->escape(Text::_('COM_ISHOP_MODAL_PRODUCTS_SELECT_ALL')); ?>">
                             </th>
                         <?php endif; ?>
                         <th scope="col" class="w-1 text-center">
