@@ -12,6 +12,7 @@ namespace Ilange\Component\Ishop\Administrator\Model;
 defined('_JEXEC') or die;
 
 use Ilange\Component\Ishop\Administrator\Extension\IshopComponent;
+use Ilange\Component\Ishop\Administrator\Service\ProductRelationSyncService;
 use Joomla\CMS\Application\ApplicationHelper;
 use Joomla\CMS\Event\AbstractEvent;
 use Joomla\CMS\Event\Model\AfterSaveEvent;
@@ -217,24 +218,16 @@ class ProductModel extends AdminModel
         $table->related = implode(',', $table->related);
 
         // ID похожих товаров
-        if (!isset($table->similar) || !is_array($table->similar)) {
-            $table->similar = [];
-        } else {
-            // удалить пустые элементы массива
-            $table->similar = array_diff($table->similar, [0, null]);
-        }
-        // преобразуем в строку
-        $table->similar = implode(',', $table->similar);
+        $table->similar = implode(
+            ',',
+            ProductRelationSyncService::normalizeIds($table->similar ?? [], (int) $table->id)
+        );
 
         // ID модификаций этого товара
-        if (!isset($table->offers) || !is_array($table->offers)) {
-            $table->offers = [];
-        } else {
-            // удалить пустые элементы массива
-            $table->offers = array_diff($table->offers, [0, null]);
-        }
-        // преобразуем в строку
-        $table->offers = implode(',', $table->offers);
+        $table->offers = implode(
+            ',',
+            ProductRelationSyncService::normalizeIds($table->offers ?? [], (int) $table->id)
+        );
 
         // ID сервисных центров
         if (!isset($table->services) || !is_array($table->services)) {
@@ -735,10 +728,39 @@ class ProductModel extends AdminModel
         if (parent::save($data)) {
             // Если успешно сохранили товар,
             // необходимо также сохранить характеристики товара
-            return self::saveFieldList($data);
+            if (!self::saveFieldList($data)) {
+                return false;
+            }
+
+            $this->syncProductRelations($data);
+
+            return true;
         }
 
         return false;
+    }
+
+    /**
+     * Синхронизирует симметричные CSV-связи товара после сохранения.
+     *
+     * @param   array  $data  Данные сохраненного товара.
+     *
+     * @return void
+     * @throws \Throwable
+     * @since 1.0.0
+     */
+    private function syncProductRelations(array $data): void
+    {
+        $productId = (int) $this->getState('product.id', 0);
+
+        if (!$productId) {
+            return;
+        }
+
+        $relationSyncService = new ProductRelationSyncService($this->getDatabase());
+
+        $relationSyncService->sync($productId, 'offers', $data['offers'] ?? []);
+        $relationSyncService->sync($productId, 'similar', $data['similar'] ?? []);
     }
 
     /**
