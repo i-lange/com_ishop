@@ -12,9 +12,11 @@ namespace Ilange\Component\Ishop\Site\Controller;
 defined('_JEXEC') or die;
 
 use Exception;
+use Ilange\Component\Ishop\Site\Helper\RouteHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Response\JsonResponse;
+use Joomla\CMS\Router\Route;
 
 
 /**
@@ -125,6 +127,66 @@ class CompareController extends BaseController
     }
 
     /**
+     * Удаляет товар из списка сравнения и возвращает пользователя на страницу сравнения.
+     *
+     * @return void
+     * @throws Exception
+     * @since 1.0.26
+     */
+    public function removeProduct(): void
+    {
+        $this->app->allowCache(false);
+
+        $productId = $this->input->post->getInt('product_id', 0);
+
+        try {
+            $this->requireValidPostToken();
+
+            $result = $productId > 0
+                ? $this->getModel('Compare', 'Site')->remove($productId)
+                : false;
+
+            if ($result === false) {
+                $this->app->enqueueMessage(Text::_('COM_ISHOP_COMPARE_ERROR'), 'error');
+            }
+        } catch (Exception $e) {
+            $this->app->enqueueMessage($e->getMessage(), 'error');
+        }
+
+        $this->redirectToCompare();
+    }
+
+    /**
+     * Удаляет из сравнения все товары указанной категории и возвращает пользователя на страницу сравнения.
+     *
+     * @return void
+     * @throws Exception
+     * @since 1.0.26
+     */
+    public function removeCategory(): void
+    {
+        $this->app->allowCache(false);
+
+        $categoryId = $this->input->post->getInt('category_id', 0);
+
+        try {
+            $this->requireValidPostToken();
+
+            $result = $this
+                ->getModel('Compare', 'Site')
+                ->removeCategory($categoryId);
+
+            if ($result === false) {
+                $this->app->enqueueMessage(Text::_('COM_ISHOP_COMPARE_ERROR'), 'error');
+            }
+        } catch (Exception $e) {
+            $this->app->enqueueMessage($e->getMessage(), 'error');
+        }
+
+        $this->redirectToCompare();
+    }
+
+    /**
      * Проверяет CSRF token для POST AJAX-запросов.
      *
      * @return void
@@ -136,5 +198,16 @@ class CompareController extends BaseController
         if (!$this->checkToken('post', false)) {
             throw new Exception(Text::_('JINVALID_TOKEN_NOTICE'), 403);
         }
+    }
+
+    /**
+     * Возвращает пользователя на список сравнения после POST-действий.
+     *
+     * @return void
+     * @since 1.0.26
+     */
+    private function redirectToCompare(): void
+    {
+        $this->setRedirect(Route::_(RouteHelper::getCompareRoute(), false));
     }
 }

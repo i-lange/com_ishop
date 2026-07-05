@@ -633,6 +633,60 @@ class CompareModel extends BaseDatabaseModel
     }
 
     /**
+     * Удаляет из списка сравнения все товары указанной категории.
+     *
+     * @param int $categoryId Идентификатор категории
+     *
+     * @return array|false объект с данными сравнения
+     * @throws \Exception
+     * @since 1.0.26
+     */
+    public function removeCategory(int $categoryId = 0)
+    {
+        if ($categoryId <= 0) {
+            return false;
+        }
+
+        $user = $this->getMVCFactory()->createModel('User', 'Site');
+        $app = Factory::getApplication();
+        $data = $user->getItem();
+
+        if ($data === false) {
+            return false;
+        }
+
+        $compare = (new Registry($data->compare))->toArray();
+
+        if (empty($compare)) {
+            $app->setUserState('com_ishop.compare.category_id', 0);
+
+            return ['count' => 0, 'products' => []];
+        }
+
+        $removeIds = $this->getComparedProductIdsByCategory($compare, $categoryId);
+
+        if (empty($removeIds)) {
+            return ['count' => count($compare), 'products' => array_values($compare)];
+        }
+
+        $compare = array_values(
+            array_filter(
+                $compare,
+                static fn ($productId) => !in_array((int) $productId, $removeIds, true)
+            )
+        );
+
+        $data->compare = (string) new Registry($compare);
+        $user->setData($data, 'compare');
+
+        if (empty($compare) || (int) $app->getUserState('com_ishop.compare.category_id', 0) === $categoryId) {
+            $app->setUserState('com_ishop.compare.category_id', 0);
+        }
+
+        return ['count' => count($compare), 'products' => $compare];
+    }
+
+    /**
      * Возвращает идентификатор категории товара
      * по его идентификатору
      *
@@ -665,6 +719,40 @@ class CompareModel extends BaseDatabaseModel
         }
 
         return false;
+    }
+
+    /**
+     * Возвращает ID товаров из сохраненного сравнения, которые относятся к категории.
+     *
+     * @param array $compare    Текущий список ID товаров в сравнении
+     * @param int   $categoryId Идентификатор категории
+     *
+     * @return int[]
+     * @throws \Exception
+     * @since 1.0.26
+     */
+    private function getComparedProductIdsByCategory(array $compare, int $categoryId): array
+    {
+        $productIds = array_values(
+            array_filter(
+                array_map('intval', $compare),
+                static fn ($productId) => $productId > 0
+            )
+        );
+
+        if (empty($productIds)) {
+            return [];
+        }
+
+        $db = $this->getDatabase();
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('id'))
+            ->from($db->quoteName('#__ishop_products'))
+            ->where($db->quoteName('catid') . ' = :categoryId')
+            ->where($db->quoteName('id') . ' IN (' . implode(',', $productIds) . ')')
+            ->bind(':categoryId', $categoryId, \Joomla\Database\ParameterType::INTEGER);
+
+        return array_map('intval', $db->setQuery($query)->loadColumn());
     }
 
     /**

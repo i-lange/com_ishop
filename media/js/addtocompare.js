@@ -15,7 +15,36 @@
         },
 
         handleButtonClick(e) {
-            const btn = e.target.closest('[data-tocompare]');
+            const target = e.target instanceof Element ? e.target : e.target?.parentElement;
+            if (!target) return;
+
+            const removeCategoryBtn = target.closest('[data-ishop-compare-remove-category]');
+            if (removeCategoryBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.removeCategoryAndReload(removeCategoryBtn);
+
+                return;
+            }
+
+            const removeProductBtn = target.closest('[data-ishop-compare-remove-product]');
+            if (removeProductBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.removeProductAndReload(removeProductBtn);
+
+                return;
+            }
+
+            const categoryBtn = target.closest('[data-ishop-compare-category]');
+            if (categoryBtn) {
+                e.preventDefault();
+                this.selectCategory(categoryBtn);
+
+                return;
+            }
+
+            const btn = target.closest('[data-tocompare]');
             if (!btn) return;
 
             e.preventDefault();
@@ -37,6 +66,81 @@
             } else {
                 this.add(productId, btn);
             }
+        },
+
+        selectCategory(btn) {
+            const categoryId = Number(btn.dataset.ishopCompareCategory) || 0;
+
+            if (categoryId <= 0 || btn.classList.contains('active')) {
+                return;
+            }
+
+            const form = document.getElementById('compare-submit');
+            const categoryInput = form?.querySelector('[name="category_id"]');
+
+            if (!form || !categoryInput) {
+                return;
+            }
+
+            categoryInput.value = String(categoryId);
+            form.submit();
+        },
+
+        removeCategoryAndReload(btn) {
+            const categoryId = Number(btn.dataset.ishopCompareRemoveCategory) || 0;
+
+            if (categoryId <= 0) {
+                return;
+            }
+
+            this.submitCompareAction(btn, 'compare.removeCategory', {
+                category_id: categoryId,
+            });
+            this.trackGoal('CLEAR_COMPARE_CATEGORY', 'CLEAR_COMPARE_CATEGORY');
+        },
+
+        removeProductAndReload(btn) {
+            const productId = Number(btn.dataset.ishopCompareRemoveProduct) || 0;
+
+            if (productId <= 0) {
+                return;
+            }
+
+            this.submitCompareAction(btn, 'compare.removeProduct', {
+                product_id: productId,
+            });
+            this.trackGoal('REMOVE_FROM_COMPARE', 'REMOVE_FROM_COMPARE');
+        },
+
+        submitCompareAction(btn, task, data = {}) {
+            const form = document.getElementById('compare-remove-submit');
+
+            if (!form || form.dataset.ishopPending === '1') {
+                return;
+            }
+
+            const taskInput = form.querySelector('[name="task"]');
+
+            if (!taskInput) {
+                return;
+            }
+
+            form.querySelectorAll('[name="category_id"], [name="product_id"]').forEach(input => {
+                input.value = '';
+            });
+
+            Object.entries(data).forEach(([name, value]) => {
+                const input = form.querySelector(`[name="${name}"]`);
+
+                if (input) {
+                    input.value = String(value);
+                }
+            });
+
+            taskInput.value = task;
+            form.dataset.ishopPending = '1';
+            this.setButtonPending(btn, true);
+            form.submit();
         },
 
         getCsrfToken() {
