@@ -36,6 +36,14 @@
                 return;
             }
 
+            const modeBtn = target.closest('[data-ishop-compare-mode-button]');
+            if (modeBtn) {
+                e.preventDefault();
+                this.setCompareMode(modeBtn);
+
+                return;
+            }
+
             const categoryBtn = target.closest('[data-ishop-compare-category]');
             if (categoryBtn) {
                 e.preventDefault();
@@ -66,6 +74,38 @@
             } else {
                 this.add(productId, btn);
             }
+        },
+
+        setCompareMode(btn) {
+            const mode = btn.dataset.ishopCompareModeButton === 'diff' ? 'diff' : 'all';
+            const toolbar = btn.closest('[data-ishop-compare-mode]');
+
+            if (!toolbar) {
+                return;
+            }
+
+            toolbar.querySelectorAll('[data-ishop-compare-mode-button]').forEach(button => {
+                const isActive = button === btn;
+
+                button.classList.toggle('btn-primary', isActive);
+                button.classList.toggle('btn-light', !isActive);
+                button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+
+            document.querySelectorAll('[data-ishop-compare-row]').forEach(row => {
+                const shouldHide = mode === 'diff' && row.dataset.ishopCompareMixed !== '1';
+
+                row.classList.toggle('is-hidden', shouldHide);
+                row.hidden = shouldHide;
+            });
+
+            document.querySelectorAll('[data-ishop-compare-group]').forEach(group => {
+                const rows = Array.from(group.querySelectorAll('[data-ishop-compare-row]'));
+                const shouldHide = mode === 'diff' && rows.length > 0 && rows.every(row => row.hidden);
+
+                group.classList.toggle('is-hidden', shouldHide);
+                group.hidden = shouldHide;
+            });
         },
 
         selectCategory(btn) {
