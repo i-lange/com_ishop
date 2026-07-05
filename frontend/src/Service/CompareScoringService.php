@@ -132,6 +132,10 @@ class CompareScoringService
             return;
         }
 
+        if (!$this->hasScoringDifference($scores, count($productIds))) {
+            return;
+        }
+
         $best = (int)$field->compare === -1 ? min($scores) : max($scores);
 
         foreach ($scores as $productId => $score) {
@@ -147,6 +151,29 @@ class CompareScoringService
                 $products[$productId]->compare_wins++;
             }
         }
+    }
+
+    /**
+     * Проверяет, есть ли в строке сравнения различия, дающие смысл подсветке лучшего значения.
+     *
+     * @param array $scores       Непустые нормализованные значения товаров
+     * @param int   $productCount Количество товаров в строке сравнения
+     *
+     * @return bool
+     *
+     * @since 1.0.24
+     */
+    private function hasScoringDifference(array $scores, int $productCount): bool
+    {
+        if (count($scores) < $productCount) {
+            return true;
+        }
+
+        $uniqueScores = array_unique(
+            array_map(static fn (float|int $score): string => (string)$score, $scores)
+        );
+
+        return count($uniqueScores) > 1;
     }
 
     /**
@@ -171,10 +198,35 @@ class CompareScoringService
 
         return match ((int)($field->type ?? -1)) {
             0 => $this->normaliseNumber($value),
-            1 => isset($value->raw_value) && (float)$value->raw_value > 0 ? (int)($value->weight ?? 0) : null,
-            2 => isset($value->raw_value) ? ((float)$value->raw_value > 0 ? 1 : 0) : null,
+            1 => $this->normaliseWeightedValue($field, $value),
+            2 => isset($value->raw_value) && (float)$value->raw_value > 0 ? 1 : null,
             default => null,
         };
+    }
+
+    /**
+     * Нормализует списочные значения с учетом веса и направления сравнения.
+     *
+     * @param object $field Данные характеристики
+     * @param object $value Значение характеристики товара
+     *
+     * @return int|null
+     *
+     * @since 1.0.24
+     */
+    private function normaliseWeightedValue(object $field, object $value): ?int
+    {
+        if (!isset($value->raw_value) || (float)$value->raw_value <= 0) {
+            return null;
+        }
+
+        $weight = (int)($value->weight ?? 0);
+
+        if ((int)($field->compare ?? 0) === 1 && $weight <= 0) {
+            return null;
+        }
+
+        return $weight;
     }
 
     /**
