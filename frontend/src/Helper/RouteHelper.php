@@ -90,15 +90,16 @@ abstract class RouteHelper
     /**
      * Получаем маршрут списка категорий
      *
+     * @param   int  $catid    Идентификатор корневой категории
      * @param   int  $language  Языковой код
      *
      * @return  string    Построенный маршрут списка категорий
      * @throws \Exception
      * @since 1.0.0
      */
-    public static function getCategoriesRoute($language = null)
+    public static function getCategoriesRoute($catid = 0, $language = null)
     {
-        $link = 'index.php?option=com_ishop&view=categories';
+        $link = 'index.php?option=com_ishop&view=categories&id=' . $catid;
 
         if ($language && $language !== '*' && Multilanguage::isEnabled()) {
             $link .= '&lang=' . $language;
