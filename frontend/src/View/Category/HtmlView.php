@@ -61,6 +61,7 @@ class HtmlView extends CategoryView
         $app = Factory::getApplication();
         $this->filter_object = $this->get('FilterObject');
         $this->filter_seo_page = $this->get('FilterSeoPage');
+        $this->filter_seo_links = $this->get('FilterSeoLinks');
 
         // Флаг указывает не добавлять limitstart=0 к URL адресу
         $this->pagination->hideEmptyLimitstart = true;

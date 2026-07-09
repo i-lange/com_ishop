@@ -60,6 +60,7 @@ $this->getDocument()->addScriptOptions('com_ishop.adminFilter', [
                     <legend><?php echo Text::_('JGLOBAL_FIELDSET_METADATA_OPTIONS'); ?></legend>
                     <div>
                         <?php echo $this->form->renderField('heading'); ?>
+                        <?php echo $this->form->renderField('link_anchor'); ?>
                         <?php echo $this->form->renderField('metatitle'); ?>
                         <?php echo $this->form->renderField('metadesc'); ?>
                         <?php echo $this->form->renderField('metakey'); ?>

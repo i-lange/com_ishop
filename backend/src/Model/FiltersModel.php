@@ -142,6 +142,7 @@ class FiltersModel extends ListModel
                     $db->quoteName('a.manufacturers'),
                     $db->quoteName('a.ishop_fields'),
                     $db->quoteName('a.heading'),
+                    $db->quoteName('a.link_anchor'),
                     $db->quoteName('a.metatitle'),
                     $db->quoteName('a.metadesc'),
                     $db->quoteName('a.metakey'),

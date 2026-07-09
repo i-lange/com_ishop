@@ -79,6 +79,17 @@ class CategoryModel extends ListModel
     protected $_filter_seo_page = null;
 
     /**
+     * Ссылки на опубликованные SEO-страницы фильтра текущей категории.
+     *
+     * Значение кешируется в рамках запроса, чтобы шаблон мог обращаться к
+     * списку без повторных SQL-запросов.
+     *
+     * @var array<int, object>|null
+     * @since 1.0.30
+     */
+    protected $_filter_seo_links = null;
+
+    /**
      * Категория слева и справа от этой
      * @var CategoryNode[]|null
      * @since 1.0.0
@@ -773,7 +784,9 @@ class CategoryModel extends ListModel
             ->select([
                 $db->quoteName('id'),
                 $db->quoteName('category_id'),
+                $db->quoteName('filter_key'),
                 $db->quoteName('heading'),
+                $db->quoteName('link_anchor'),
                 $db->quoteName('description'),
                 $db->quoteName('metatitle'),
                 $db->quoteName('metadesc'),
@@ -800,6 +813,179 @@ class CategoryModel extends ListModel
         $this->_filter_seo_page = $db->setQuery($query, 0, 1)->loadObject() ?: false;
 
         return $this->_filter_seo_page;
+    }
+
+    /**
+     * Возвращает ссылки на SEO-страницы фильтра для текущей категории.
+     *
+     * Метод выбирает опубликованные записи `#__ishop_filters` для текущего
+     * языка и fallback-языка `*`, убирает дубли по `filter_key` в пользу
+     * записи текущего языка и строит для каждой записи ЧПУ-ссылку через
+     * `FilterRules::getFilterRoute()`.
+     *
+     * @return array<int, object>
+     *
+     * @throws \Exception
+     * @since 1.0.30
+     */
+    public function getFilterSeoLinks(): array
+    {
+        if ($this->_filter_seo_links !== null) {
+            return $this->_filter_seo_links;
+        }
+
+        $category = $this->getCategory();
+
+        if (!$category) {
+            $this->_filter_seo_links = [];
+
+            return $this->_filter_seo_links;
+        }
+
+        $app = Factory::getApplication();
+        $language = $app->getLanguage()->getTag();
+        $published = 1;
+        $categoryId = (int) $category->id;
+
+        $db = $this->getDatabase();
+        $query = $db->getQuery(true)
+            ->select([
+                $db->quoteName('id'),
+                $db->quoteName('category_id'),
+                $db->quoteName('manufacturers'),
+                $db->quoteName('ishop_fields'),
+                $db->quoteName('min_width'),
+                $db->quoteName('max_width'),
+                $db->quoteName('min_height'),
+                $db->quoteName('max_height'),
+                $db->quoteName('min_depth'),
+                $db->quoteName('max_depth'),
+                $db->quoteName('min_weight'),
+                $db->quoteName('max_weight'),
+                $db->quoteName('filter_key'),
+                $db->quoteName('heading'),
+                $db->quoteName('link_anchor'),
+                $db->quoteName('language'),
+                $db->quoteName('ordering'),
+            ])
+            ->from($db->quoteName('#__ishop_filters'))
+            ->where($db->quoteName('category_id') . ' = :category_id')
+            ->where($db->quoteName('state') . ' = :state')
+            ->where(
+                '(' . $db->quoteName('language') . ' = :language OR ' .
+                $db->quoteName('language') . ' = ' . $db->quote('*') . ')'
+            )
+            ->order($db->quoteName('id') . ' ASC')
+            ->bind(':category_id', $categoryId, ParameterType::INTEGER)
+            ->bind(':state', $published, ParameterType::INTEGER)
+            ->bind(':language', $language);
+
+        $rows = $db->setQuery($query)->loadObjectList() ?: [];
+        $byFilterKey = [];
+
+        foreach ($rows as $row) {
+            $filterKey = (string) $row->filter_key;
+
+            if ($filterKey === '') {
+                continue;
+            }
+
+            $hasCurrentLanguage = isset($byFilterKey[$filterKey])
+                && (string) $byFilterKey[$filterKey]->language === $language;
+
+            if (!isset($byFilterKey[$filterKey]) || (!$hasCurrentLanguage && (string) $row->language === $language)) {
+                $byFilterKey[$filterKey] = $row;
+            }
+        }
+
+        $activePage = $this->getFilterSeoPage();
+        $activeId = $activePage ? (int) ($activePage->id ?? 0) : 0;
+        $activeFilterKey = $activePage ? (string) ($activePage->filter_key ?? '') : '';
+        $itemId = $app->getInput()->getInt('Itemid', 0);
+        $links = [];
+
+        foreach ($byFilterKey as $row) {
+            $title = trim((string) ($row->link_anchor ?? ''));
+
+            if ($title === '') {
+                $title = trim((string) ($row->heading ?? ''));
+            }
+
+            if ($title === '') {
+                continue;
+            }
+
+            $link = new stdClass();
+            $link->id = (int) $row->id;
+            $link->filter_key = (string) $row->filter_key;
+            $link->title = $title;
+            $link->ordering = (int) $row->ordering;
+            $link->url = FilterRules::getFilterRoute(
+                (int) $row->category_id,
+                $this->buildFilterSeoLinkFilters($row),
+                $itemId
+            );
+            $link->active = ($activeId > 0 && $activeId === $link->id)
+                || ($activeFilterKey !== '' && $activeFilterKey === $link->filter_key);
+
+            $links[] = $link;
+        }
+
+        usort(
+            $links,
+            static fn($a, $b) => [$a->ordering, $a->title, $a->id] <=> [$b->ordering, $b->title, $b->id]
+        );
+
+        $this->_filter_seo_links = $links;
+
+        return $this->_filter_seo_links;
+    }
+
+    /**
+     * Собирает параметры фильтра для route-ссылки SEO-страницы.
+     *
+     * @param   object  $row  Запись `#__ishop_filters`.
+     *
+     * @return array
+     * @since 1.0.30
+     */
+    private function buildFilterSeoLinkFilters(object $row): array
+    {
+        return FilterRules::normalizeFilterInput([
+            'manufacturers' => $this->decodeFilterJsonArray($row->manufacturers ?? ''),
+            'ishop_fields'  => $this->decodeFilterJsonArray($row->ishop_fields ?? ''),
+            'min_width'     => (int) ($row->min_width ?? 0),
+            'max_width'     => (int) ($row->max_width ?? 0),
+            'min_height'    => (int) ($row->min_height ?? 0),
+            'max_height'    => (int) ($row->max_height ?? 0),
+            'min_depth'     => (int) ($row->min_depth ?? 0),
+            'max_depth'     => (int) ($row->max_depth ?? 0),
+            'min_weight'    => (int) ($row->min_weight ?? 0),
+            'max_weight'    => (int) ($row->max_weight ?? 0),
+        ]);
+    }
+
+    /**
+     * Декодирует JSON-массив из полей SEO-фильтра.
+     *
+     * @param   mixed  $value  Сохраненное значение поля.
+     *
+     * @return array
+     * @since 1.0.30
+     */
+    private function decodeFilterJsonArray(mixed $value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (!is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     /**

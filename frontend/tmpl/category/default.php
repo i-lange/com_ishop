@@ -41,6 +41,17 @@ $categoryTitle = !empty($this->filter_seo_page->heading) ? $this->filter_seo_pag
     <?php endif; ?>
 
     <div class="category-toolbar">
+        <?php if (!empty($this->filter_seo_links)) : ?>
+            <div class="scroll-items-list mb-3 gap-1 gap-md-2" data-drag-scroller data-drag-scroller-interactive>
+                <?php foreach ($this->filter_seo_links as $link) : ?>
+                    <?php $linkClass = $link->active ? 'category-filter-link btn-tag active' : 'category-filter-link btn-tag'; ?>
+                    <a class="<?php echo $linkClass; ?>"
+                       href="<?php echo htmlspecialchars($link->url, ENT_COMPAT, 'UTF-8'); ?>"<?php echo $link->active ? ' aria-current="page"' : ''; ?>>
+                        <span class="btn-title"><?php echo $this->escape($link->title); ?></span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
         <div class="dropdown changeable">
             <button class="dropdown-toggle"
                     title="<?php echo Text::_('COM_ISHOP_MSG_OPEN_SORTING'); ?>"><svg class="svg"><use href="/icons_v3.svg#sorting"/></svg><span class="dropdown-text"><?php echo Text::_('COM_ISHOP_ORDER_' . $text); ?></span></button>

@@ -141,6 +141,9 @@ if ($saveOrder && !empty($this->items)) {
                                 </th>
                                 <td class="small d-none d-lg-table-cell">
                                     <?php echo $this->escape($item->heading); ?>
+                                    <?php if (!empty($item->link_anchor)) : ?>
+                                        <div class="smallsub"><?php echo $this->escape($item->link_anchor); ?></div>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="small d-none d-md-table-cell">
                                     <?php if ((int) $item->created_by != 0) : ?>

@@ -96,6 +96,10 @@
                type="text"
                maxlength="255"
                label="COM_ISHOP_FIELD_HEADING"/>
+        <field name="link_anchor"
+               type="text"
+               maxlength="255"
+               label="COM_ISHOP_FIELD_LINK_ANCHOR"/>
         <field name="metatitle"
                type="text"
                maxlength="255"
