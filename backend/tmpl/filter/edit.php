@@ -74,6 +74,12 @@ $this->getDocument()->addScriptOptions('com_ishop.adminFilter', [
                     <div>
                         <?php echo $this->form->renderField('category_id'); ?>
                         <?php echo $this->form->renderField('manufacturers'); ?>
+                        <?php echo $this->form->renderField('warehouses'); ?>
+                        <div class="row">
+                            <div class="col-6"><?php echo $this->form->renderField('min_price'); ?></div>
+                            <div class="col-6"><?php echo $this->form->renderField('max_price'); ?></div>
+                        </div>
+                        <?php echo $this->form->renderField('good_price'); ?>
                         <?php echo $this->form->renderField('ishop_fields'); ?>
                         <div class="row">
                             <div class="col-6"><?php echo $this->form->renderField('min_width'); ?></div>

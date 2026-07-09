@@ -764,7 +764,11 @@ class CategoryModel extends ListModel
 
         $filters = [
             'category_id'    => (int) $category->id,
+            'min_price'      => $this->getState('filter.min_price', 0),
+            'max_price'      => $this->getState('filter.max_price', 0),
+            'good_price'     => $this->getState('filter.good_price', 0),
             'manufacturers'  => $this->getState('filter.manufacturers', []),
+            'warehouses'     => $this->getState('filter.warehouses', []),
             'ishop_fields'   => $this->getState('filter.ishop_fields', []),
             'min_width'      => $this->getState('filter.min_width', 0),
             'max_width'      => $this->getState('filter.max_width', 0),
@@ -854,7 +858,11 @@ class CategoryModel extends ListModel
                 $db->quoteName('id'),
                 $db->quoteName('category_id'),
                 $db->quoteName('manufacturers'),
+                $db->quoteName('warehouses'),
                 $db->quoteName('ishop_fields'),
+                $db->quoteName('min_price'),
+                $db->quoteName('max_price'),
+                $db->quoteName('good_price'),
                 $db->quoteName('min_width'),
                 $db->quoteName('max_width'),
                 $db->quoteName('min_height'),
@@ -1036,7 +1044,11 @@ class CategoryModel extends ListModel
     {
         return FilterRules::normalizeFilterInput([
             'manufacturers' => $this->decodeFilterJsonArray($row->manufacturers ?? ''),
+            'warehouses'    => $this->decodeFilterJsonArray($row->warehouses ?? ''),
             'ishop_fields'  => $this->decodeFilterJsonArray($row->ishop_fields ?? ''),
+            'min_price'     => (int) ($row->min_price ?? 0),
+            'max_price'     => (int) ($row->max_price ?? 0),
+            'good_price'    => (int) ($row->good_price ?? 0),
             'min_width'     => (int) ($row->min_width ?? 0),
             'max_width'     => (int) ($row->max_width ?? 0),
             'min_height'    => (int) ($row->min_height ?? 0),

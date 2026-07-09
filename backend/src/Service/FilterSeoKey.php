@@ -42,9 +42,11 @@ final class FilterSeoKey
      *
      * - `category_id` приводится к положительному integer;
      * - `manufacturers` превращается в отсортированный массив уникальных ID;
+     * - `warehouses` превращается в отсортированный массив уникальных ID;
      * - `ishop_fields` нормализуется по типам значений;
-     * - диапазоны `width`, `height`, `depth`, `weight` приводятся к парам
-     *   `min/max`;
+     * - `good_price` включается как флаг наличия скидки;
+     * - диапазоны `price`, `width`, `height`, `depth`, `weight` приводятся к
+     *   парам `min/max`;
      * - полностью пустые значения удаляются.
      *
      * `category_id` сохраняется в нормализованном результате для валидации
@@ -70,12 +72,21 @@ final class FilterSeoKey
             $result['manufacturers'] = $manufacturers;
         }
 
+        $warehouses = self::normalizeIds($data['warehouses'] ?? []);
+        if (!empty($warehouses)) {
+            $result['warehouses'] = $warehouses;
+        }
+
         $fields = self::normalizeFields($data['ishop_fields'] ?? []);
         if (!empty($fields)) {
             $result['ishop_fields'] = $fields;
         }
 
-        foreach (['width', 'height', 'depth', 'weight'] as $dimension) {
+        if ((int) ($data['good_price'] ?? 0) > 0) {
+            $result['good_price'] = 1;
+        }
+
+        foreach (['price', 'width', 'height', 'depth', 'weight'] as $dimension) {
             $range = self::normalizeRange($data['min_' . $dimension] ?? 0, $data['max_' . $dimension] ?? 0);
 
             if ($range !== null) {
@@ -117,6 +128,7 @@ final class FilterSeoKey
      * Поддерживаются значения из разных источников:
      *
      * - массив ID из формы;
+     * - JSON-массив ID из сохраненного поля таблицы;
      * - строка с ID через запятую;
      * - одиночное скалярное значение.
      *
@@ -132,7 +144,16 @@ final class FilterSeoKey
     public static function normalizeIds(mixed $value): array
     {
         if (is_string($value)) {
-            $value = $value === '' ? [] : explode(',', $value);
+            $value = trim($value);
+
+            if ($value === '') {
+                $value = [];
+            } elseif ($value[0] === '[') {
+                $decoded = json_decode($value, true);
+                $value = is_array($decoded) ? $decoded : explode(',', $value);
+            } else {
+                $value = explode(',', $value);
+            }
         } elseif (!is_array($value)) {
             $value = [$value];
         }

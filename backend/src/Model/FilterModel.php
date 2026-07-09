@@ -21,8 +21,9 @@ use Joomla\Registry\Registry;
  * Модель одной SEO-страницы фильтра.
  *
  * Обслуживает административную форму записи `#__ishop_filters`: загрузку
- * данных, проверку прав, подготовку JSON-полей характеристик и производителей,
- * а также передачу данных в table-класс для нормализации и сохранения.
+ * данных, проверку прав, подготовку JSON-полей характеристик, производителей
+ * и складов, а также передачу данных в table-класс для нормализации и
+ * сохранения.
  *
  * @since 1.0.0
  */
@@ -198,6 +199,7 @@ class FilterModel extends AdminModel
         }
 
         $item->manufacturers = $this->decodeJsonArray($item->manufacturers ?? '');
+        $item->warehouses = $this->decodeJsonArray($item->warehouses ?? '');
         $item->ishop_fields = json_encode(
             $this->decodeJsonArray($item->ishop_fields ?? ''),
             JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES

@@ -59,8 +59,9 @@ class FilterTable extends Table
     /**
      * Привязывает данные к объекту таблицы.
      *
-     * Перед стандартной привязкой нормализует фильтр и пересобирает JSON-поля,
-     * чтобы форма и сохранение использовали один канонический формат.
+     * Перед стандартной привязкой нормализует фильтр, пересобирает JSON-поля
+     * и числовые условия, чтобы форма и сохранение использовали один
+     * канонический формат.
      *
      * @param   array|object  $src     Исходные данные.
      * @param   array|string  $ignore  Поля, которые нужно игнорировать.
@@ -103,8 +104,12 @@ class FilterTable extends Table
         }
 
         $this->manufacturers = $data['manufacturers'];
+        $this->warehouses = $data['warehouses'];
         $this->ishop_fields = $data['ishop_fields'];
         $this->filter_key = $data['filter_key'];
+        $this->min_price = (int) $data['min_price'];
+        $this->max_price = (int) $data['max_price'];
+        $this->good_price = (int) $data['good_price'];
 
         foreach (['width', 'height', 'depth', 'weight'] as $dimension) {
             $this->{'min_' . $dimension} = (int) $data['min_' . $dimension];
@@ -168,9 +173,9 @@ class FilterTable extends Table
     /**
      * Нормализует входные условия фильтра для хранения.
      *
-     * Возвращает данные с сериализованными JSON-полями производителей и
-     * характеристик, числовыми диапазонами габаритов/веса и рассчитанным
-     * каноническим ключом `filter_key`.
+     * Возвращает данные с сериализованными JSON-полями производителей,
+     * складов и характеристик, числовыми диапазонами цены/габаритов/веса,
+     * флагом скидки и рассчитанным каноническим ключом `filter_key`.
      *
      * @param   array  $data  Исходные данные формы или объекта таблицы.
      *
@@ -184,8 +189,12 @@ class FilterTable extends Table
 
         $data['category_id'] = (int) ($normalized['category_id'] ?? 0);
         $data['manufacturers'] = json_encode($normalized['manufacturers'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $data['warehouses'] = json_encode($normalized['warehouses'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $data['ishop_fields'] = json_encode($normalized['ishop_fields'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $data['filter_key'] = FilterSeoKey::build($normalized);
+        $data['min_price'] = (int) ($normalized['min_price'] ?? 0);
+        $data['max_price'] = (int) ($normalized['max_price'] ?? 0);
+        $data['good_price'] = (int) ($normalized['good_price'] ?? 0);
 
         foreach (['width', 'height', 'depth', 'weight'] as $dimension) {
             $data['min_' . $dimension] = (int) ($normalized['min_' . $dimension] ?? 0);
