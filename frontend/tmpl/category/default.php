@@ -44,7 +44,11 @@ $categoryTitle = !empty($this->filter_seo_page->heading) ? $this->filter_seo_pag
         <?php if (!empty($this->filter_seo_links)) : ?>
             <div class="scroll-items-list mb-3 gap-1 gap-md-2" data-drag-scroller data-drag-scroller-interactive>
                 <?php foreach ($this->filter_seo_links as $link) : ?>
-                    <?php $linkClass = $link->active ? 'category-filter-link btn-tag active' : 'category-filter-link btn-tag'; ?>
+                    <?php
+                    $linkClass = 'category-filter-link btn-tag';
+                    $linkClass .= !empty($link->is_all) ? ' category-filter-link-all' : '';
+                    $linkClass .= $link->active ? ' active' : '';
+                    ?>
                     <a class="<?php echo $linkClass; ?>"
                        href="<?php echo htmlspecialchars($link->url, ENT_COMPAT, 'UTF-8'); ?>"<?php echo $link->active ? ' aria-current="page"' : ''; ?>>
                         <span class="btn-title"><?php echo $this->escape($link->title); ?></span>

@@ -13,6 +13,7 @@ defined('_JEXEC') or die;
 
 use Joomla\CMS\Categories\CategoryNode;
 use Joomla\CMS\Factory;
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\Log\Log;
 use Joomla\Registry\Registry;
 use Joomla\CMS\Language\Multilanguage;
@@ -936,9 +937,91 @@ class CategoryModel extends ListModel
             static fn($a, $b) => [$a->ordering, $a->title, $a->id] <=> [$b->ordering, $b->title, $b->id]
         );
 
+        if (empty($links)) {
+            $this->_filter_seo_links = [];
+
+            return $this->_filter_seo_links;
+        }
+
+        foreach ($links as $index => $link) {
+            if (!$link->active) {
+                continue;
+            }
+
+            unset($links[$index]);
+            array_unshift($links, $link);
+            $links = array_values($links);
+
+            break;
+        }
+
+        array_unshift(
+            $links,
+            $this->buildAllFilterSeoLink($categoryId, $itemId, !$this->hasActiveCategoryFilter())
+        );
+
         $this->_filter_seo_links = $links;
 
         return $this->_filter_seo_links;
+    }
+
+    /**
+     * Создает ссылку сброса на полный список товаров категории.
+     *
+     * @param   int   $categoryId  ID категории.
+     * @param   int   $itemId      ID пункта меню.
+     * @param   bool  $active      Активна ли ссылка на текущей странице.
+     *
+     * @return object
+     * @since 1.0.30
+     */
+    private function buildAllFilterSeoLink(int $categoryId, int $itemId, bool $active): object
+    {
+        $link = new stdClass();
+        $link->id = 0;
+        $link->filter_key = '';
+        $link->title = Text::_('COM_ISHOP_FILTER_ALL');
+        $link->ordering = PHP_INT_MIN;
+        $link->url = FilterRules::getBaseCategoryRoute($categoryId, $itemId);
+        $link->active = $active;
+        $link->is_all = true;
+
+        return $link;
+    }
+
+    /**
+     * Проверяет, применен ли к категории любой фильтр товаров.
+     *
+     * @return bool
+     * @since 1.0.30
+     */
+    private function hasActiveCategoryFilter(): bool
+    {
+        $filters = FilterRules::normalizeFilterInput([
+            'min_price'     => $this->getState('filter.min_price', 0),
+            'max_price'     => $this->getState('filter.max_price', 0),
+            'good_price'    => $this->getState('filter.good_price', 0),
+            'min_width'     => $this->getState('filter.min_width', 0),
+            'max_width'     => $this->getState('filter.max_width', 0),
+            'min_height'    => $this->getState('filter.min_height', 0),
+            'max_height'    => $this->getState('filter.max_height', 0),
+            'min_depth'     => $this->getState('filter.min_depth', 0),
+            'max_depth'     => $this->getState('filter.max_depth', 0),
+            'min_weight'    => $this->getState('filter.min_weight', 0),
+            'max_weight'    => $this->getState('filter.max_weight', 0),
+            'manufacturers' => $this->getState('filter.manufacturers', []),
+            'warehouses'    => $this->getState('filter.warehouses', []),
+            'ishop_fields'  => $this->getState('filter.ishop_fields', []),
+        ]);
+
+        if (!empty($filters)) {
+            return true;
+        }
+
+        return (int) $this->getState('filter.manufacturer_id', 0) > 0
+            || (int) $this->getState('filter.warehouse_id', 0) > 0
+            || (int) $this->getState('filter.tag', 0) > 0
+            || trim((string) $this->getState('list.filter', '')) !== '';
     }
 
     /**
