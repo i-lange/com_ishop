@@ -136,7 +136,7 @@
             this.submitCompareAction(btn, 'compare.removeCategory', {
                 category_id: categoryId,
             });
-            this.trackGoal('CLEAR_COMPARE_CATEGORY', 'CLEAR_COMPARE_CATEGORY');
+            this.trackEvent('CLEAR_COMPARE_CATEGORY', { category_id: categoryId });
         },
 
         removeProductAndReload(btn) {
@@ -149,7 +149,7 @@
             this.submitCompareAction(btn, 'compare.removeProduct', {
                 product_id: productId,
             });
-            this.trackGoal('REMOVE_FROM_COMPARE', 'REMOVE_FROM_COMPARE');
+            this.trackEvent('REMOVE_FROM_COMPARE', { product_id: productId });
         },
 
         submitCompareAction(btn, task, data = {}) {
@@ -260,7 +260,7 @@
                 .then(response => {
                     this.updateModule(response.data?.count);
                     btn.classList.add('active');
-                    this.trackGoal('TO_COMPARE', 'TO_COMPARE');
+                    this.trackEvent('ADD_TO_COMPARE', { product_id: productId });
                 })
                 .catch(err => {
                     console.error('Compare add error:', err);
@@ -277,7 +277,7 @@
                 .then(response => {
                     this.updateModule(response.data?.count);
                     btn.classList.remove('active');
-                    this.trackGoal('REMOVE_FROM_COMPARE', 'REMOVE_FROM_COMPARE');
+                    this.trackEvent('REMOVE_FROM_COMPARE', { product_id: productId });
                 })
                 .catch(err => {
                     console.error('Compare remove error:', err);
@@ -295,7 +295,7 @@
                     this.updateButtons();
                     this.updateModule(0);
                     btn.classList.remove('active');
-                    this.trackGoal('CLEAR_COMPARE', 'CLEAR_COMPARE');
+                    this.trackEvent('CLEAR_COMPARE');
                 })
                 .catch(err => {
                     console.error('Compare clear error:', err);
@@ -333,13 +333,15 @@
             buttons.forEach(btn => btn.classList.remove('active'));
         },
 
-        trackGoal(ymGoal, gtagGoal) {
-            if (
-                window.iTheme
-                && typeof window.iTheme.setGoal === 'function'
-            ) {
-                window.iTheme.setGoal(ymGoal, gtagGoal);
-            }
+        trackEvent(name, params = {}) {
+            document.dispatchEvent(new CustomEvent('isiteanalytics:event', {
+                bubbles: true,
+                detail: {
+                    name,
+                    params,
+                    source: 'com_ishop.compare',
+                },
+            }));
         }
     };
 

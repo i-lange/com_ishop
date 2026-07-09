@@ -210,18 +210,20 @@
       this.container.dataset.ishopNextLimitstart = String(this.nextLimitstart);
       this.container.dataset.ishopHasMore = data.hasMore ? '1' : '0';
 
-      if (window.iTheme && typeof window.iTheme.registerEcommerceItems === 'function') {
-        window.iTheme.registerEcommerceItems(data.analyticsItems || []);
-      }
-
-      if (window.iTheme && typeof window.iTheme.trackViewItemList === 'function') {
-        window.iTheme.trackViewItemList({
+      document.dispatchEvent(new CustomEvent('isiteanalytics:context', {
+        bubbles: true,
+        detail: {
+          event: 'view_item_list',
           currency: data.currency || this.container.dataset.ishopCurrency || 'BYN',
-          item_list_id: data.itemList && data.itemList.id ? data.itemList.id : this.context,
-          item_list_name: data.itemList && data.itemList.name ? data.itemList.name : this.context,
+          page: this.context,
+          list: {
+            item_list_id: data.itemList && data.itemList.id ? data.itemList.id : this.context,
+            item_list_name: data.itemList && data.itemList.name ? data.itemList.name : this.context,
+          },
           items: data.analyticsItems || [],
-        });
-      }
+          source: 'com_ishop.products-loader',
+        },
+      }));
 
       emitLoadedEvent(this.container, data);
       document.dispatchEvent(new CustomEvent('joomla:updated', { bubbles: true, detail: { target: this.container } }));

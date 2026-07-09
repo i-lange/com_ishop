@@ -21,23 +21,31 @@ $this->getModel()->hit($product->id);
 $tabs = ['fields', 'fulltext', 'parts', 'payments', 'deliveries', 'reviews', ];
 
 $currency = strtoupper($this->params->get('defaultCurrency', 'BYN'));
-$dataLayerItems = [];
 $dataLayerPrice = ($product->discount_size > 0) ? $product->sale_price : $product->price;
-$dataLayerItems[] = [
-    'item_id'       => $product->id,
-    'item_name'     => $this->escape($product->fullname),
-    'discount'      => $product->discount_size,
-    'index'         => 1,
-    'item_brand'    => $product->manufacturer_title,
-    'item_category' => $product->category_title,
-    'price'         => $dataLayerPrice,
-    'quantity'      => 1,
+$analyticsPayload = [
+    'event'    => 'view_item',
+    'currency' => $currency,
+    'value'    => $dataLayerPrice,
+    'page'     => 'product',
+    'items'    => [
+        [
+            'item_id'       => $product->id,
+            'item_name'     => $this->escape($product->fullname),
+            'discount'      => $product->discount_size,
+            'index'         => 1,
+            'item_brand'    => $product->manufacturer_title,
+            'item_category' => $product->category_title,
+            'price'         => $dataLayerPrice,
+            'quantity'      => 1,
+        ],
+    ],
+    'source'   => 'com_ishop.product',
 ];
-$jsonLayerItems = json_encode($dataLayerItems, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-$dataLayer = 'const dataLayerItems = ' . $jsonLayerItems . ';';
-$wa->addInlineScript($dataLayer);
-$dataLayer = 'gtag("event","view_item",{currency:"' . $currency . '",value:"' . $dataLayerPrice . '",items:dataLayerItems});';
-$wa->addInlineScript($dataLayer);
+$wa->addInlineScript(
+    'document.dispatchEvent(new CustomEvent("isiteanalytics:context",{bubbles:true,detail:'
+    . json_encode($analyticsPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    . '}));'
+);
 ?>
 <div class="module-card">
     <div class="container">

@@ -29,9 +29,9 @@ $product_index = 0;
 $currency = strtoupper($this->params->get('defaultCurrency', 'BYN'));
 $round = (int) $this->params->get('defaultCurrency', 0);
 
-$dataLayerItems = [];
+$analyticsItems = [];
 foreach ($this->items as $i => $product) {
-    $dataLayerItems[] = [
+    $analyticsItems[] = [
         'item_id'       => $product->id,
         'item_name'     => $this->escape($product->fullname),
         'discount'      => $product->discount_size,
@@ -42,11 +42,22 @@ foreach ($this->items as $i => $product) {
         'quantity'      => 1,
     ];
 }
-$jsonLayerItems = json_encode($dataLayerItems, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-$dataLayer = 'const dataLayerItems = ' . $jsonLayerItems . ';';
-$wa->addInlineScript($dataLayer);
-$dataLayer = 'gtag("event","view_item_list",{currency:"' . $currency . '",item_list_id:"' . $this->category->id . '",item_list_name:"' . $this->category->title . '",items:dataLayerItems});';
-$wa->addInlineScript($dataLayer);
+$analyticsPayload = [
+    'event'    => 'view_item_list',
+    'currency' => $currency,
+    'page'     => 'category',
+    'list'     => [
+        'item_list_id'   => (string) $this->category->id,
+        'item_list_name' => (string) $this->category->title,
+    ],
+    'items'    => $analyticsItems,
+    'source'   => 'com_ishop.category',
+];
+$wa->addInlineScript(
+    'document.dispatchEvent(new CustomEvent("isiteanalytics:context",{bubbles:true,detail:'
+    . json_encode($analyticsPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    . '}));'
+);
 ?>
 <?php foreach ($this->items as $product) : ?>
     <?php $product_index++; ?>
@@ -133,7 +144,10 @@ $wa->addInlineScript($dataLayer);
             <?php if (!$product->available) : ?>
             <div class="product_not_available"><?php echo Text::_('COM_ISHOP_PRODUCT_NOT_AVAILABLE'); ?></div>
             <?php endif; ?>
-            <a class="cover" href="<?php echo Route::_(RouteHelper::getProductRoute((int)$product->id, (int)$product->catid)); ?>">
+            <a class="cover"
+               href="<?php echo Route::_(RouteHelper::getProductRoute((int)$product->id, (int)$product->catid)); ?>"
+               data-isiteanalytics-select-item
+               data-isiteanalytics-product-id="<?php echo (int) $product->id; ?>">
                 <span class="position-out"><?php echo $this->escape($product->fullname); ?></span>
             </a>
             <div class="product_tools">

@@ -21,7 +21,7 @@ $currency = strtoupper($this->params->get('defaultCurrency', 'BYN'));
 
 if (!empty($this->checkout->products)) {
     $forMail = [];
-    $dataLayerItems = [];
+    $analyticsItems = [];
     foreach ($this->checkout->products as $i => $product) {
         $forMail[] = [
             'product_id' => $product->id,
@@ -31,7 +31,7 @@ if (!empty($this->checkout->products)) {
             'price' => ($product->sale_price > 0) ? $product->sale_price : $product->price . ' руб.'
         ];
 
-        $dataLayerItems[] = [
+        $analyticsItems[] = [
             'item_id'       => $product->id,
             'item_name'     => $this->escape($product->fullname),
             'discount'      => $product->discount_size,
@@ -43,11 +43,19 @@ if (!empty($this->checkout->products)) {
         ];
     }
 
-    $jsonLayerItems = json_encode($dataLayerItems, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    $dataLayer = 'const dataLayerItems = ' . $jsonLayerItems . ';';
-    $wa->addInlineScript($dataLayer);
-    $dataLayer = 'gtag("event","begin_checkout",{currency:"' . $currency . '",value:"' . $this->checkout->summary . '",items:dataLayerItems});';
-    $wa->addInlineScript($dataLayer);
+    $analyticsPayload = [
+        'event'    => 'begin_checkout',
+        'currency' => $currency,
+        'value'    => $this->checkout->summary,
+        'page'     => 'checkout',
+        'items'    => $analyticsItems,
+        'source'   => 'com_ishop.checkout',
+    ];
+    $wa->addInlineScript(
+        'document.dispatchEvent(new CustomEvent("isiteanalytics:context",{bubbles:true,detail:'
+        . json_encode($analyticsPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+        . '}));'
+    );
 }
 ?>
 <div class="container pb-5">
@@ -71,7 +79,10 @@ if (!empty($this->checkout->products)) {
     <form id="checkout-submit"
           action="<?php echo Route::_(RouteHelper::getCheckoutRoute()); ?>"
           method="post"
-          name="checkout-submit">
+          name="checkout-submit"
+          data-isiteanalytics-items="<?php echo $this->escape(json_encode($analyticsItems, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)); ?>"
+          data-isiteanalytics-currency="<?php echo $this->escape($currency); ?>"
+          data-isiteanalytics-value="<?php echo $this->escape((string) $this->checkout->summary); ?>">
         <div class="checkout-grid">
             <div>
                 <h3><?php echo Text::_('COM_ISHOP_CHECKOUT_CLIENT'); ?></h3>

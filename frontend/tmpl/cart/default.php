@@ -24,13 +24,13 @@ $currency = strtoupper($this->params->get('defaultCurrency', 'BYN'));
 $count = count($this->cart->products);
 
 if ($this->cart->total > 0) {
-    $dataLayerItems = [];
+    $analyticsItems = [];
     foreach ($this->cart->products as $i => $product) {
         if (empty($product->count)) {
             continue;
         }
 
-        $dataLayerItems[] = [
+        $analyticsItems[] = [
             'item_id'       => $product->id,
             'item_name'     => $this->escape($product->fullname),
             'discount'      => $product->discount_size,
@@ -41,11 +41,19 @@ if ($this->cart->total > 0) {
             'quantity'      => $product->count,
         ];
     }
-    $jsonLayerItems = json_encode($dataLayerItems, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    $dataLayer = 'const dataLayerItems = ' . $jsonLayerItems . ';';
-    $wa->addInlineScript($dataLayer);
-    $dataLayer = 'gtag("event","view_cart",{currency:"' . $currency . '",value:"' . $this->cart->summary . '",items:dataLayerItems});';
-    $wa->addInlineScript($dataLayer);
+    $analyticsPayload = [
+        'event'    => 'view_cart',
+        'currency' => $currency,
+        'value'    => $this->cart->summary,
+        'page'     => 'cart',
+        'items'    => $analyticsItems,
+        'source'   => 'com_ishop.cart',
+    ];
+    $wa->addInlineScript(
+        'document.dispatchEvent(new CustomEvent("isiteanalytics:context",{bubbles:true,detail:'
+        . json_encode($analyticsPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+        . '}));'
+    );
 }
 ?>
 <div class="container pb-5">

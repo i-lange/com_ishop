@@ -108,7 +108,10 @@ $round = (int) $this->params->get('defaultCurrency', 0);
                         <?php if (!$product->available) : ?>
                             <div class="product_not_available"><?php echo Text::_('COM_ISHOP_PRODUCT_NOT_AVAILABLE'); ?></div>
                         <?php endif; ?>
-                        <a class="cover" href="<?php echo Route::_(RouteHelper::getProductRoute((int)$product->id, (int)$product->catid)); ?>">
+                        <a class="cover"
+                           href="<?php echo Route::_(RouteHelper::getProductRoute((int)$product->id, (int)$product->catid)); ?>"
+                           data-isiteanalytics-select-item
+                           data-isiteanalytics-product-id="<?php echo (int) $product->id; ?>">
                             <span class="position-out"><?php echo $this->escape($product->fullname); ?></span>
                         </a>
                         <div class="product_tools">

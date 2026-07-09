@@ -116,7 +116,7 @@
                 .then(response => {
                     this.updateModule(response.data?.count);
                     btn.classList.add('active');
-                    this.trackGoal('TO_WISHLIST', 'TO_WISHLIST');
+                    this.trackEvent('ADD_TO_WISHLIST', { product_id: productId });
                 })
                 .catch(err => {
                     console.error('Wishlist add error:', err);
@@ -133,7 +133,7 @@
                 .then(response => {
                     this.updateModule(response.data?.count);
                     btn.classList.remove('active');
-                    this.trackGoal('REMOVE_FROM_WISHLIST', 'REMOVE_FROM_WISHLIST');
+                    this.trackEvent('REMOVE_FROM_WISHLIST', { product_id: productId });
                 })
                 .catch(err => {
                     console.error('Wishlist remove error:', err);
@@ -151,7 +151,7 @@
                     this.updateButtons();
                     this.updateModule(0);
                     btn.classList.remove('active');
-                    this.trackGoal('CLEAR_WISHLIST', 'CLEAR_WISHLIST');
+                    this.trackEvent('CLEAR_WISHLIST');
                 })
                 .catch(err => {
                     console.error('Wishlist clear error:', err);
@@ -183,13 +183,15 @@
             buttons.forEach(btn => btn.classList.remove('active'));
         },
 
-        trackGoal(ymGoal, gtagGoal) {
-            if (
-                window.iTheme
-                && typeof window.iTheme.setGoal === 'function'
-            ) {
-                window.iTheme.setGoal(ymGoal, gtagGoal);
-            }
+        trackEvent(name, params = {}) {
+            document.dispatchEvent(new CustomEvent('isiteanalytics:event', {
+                bubbles: true,
+                detail: {
+                    name,
+                    params,
+                    source: 'com_ishop.wishlist',
+                },
+            }));
         }
     };
 

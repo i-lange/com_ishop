@@ -328,12 +328,15 @@
 		},
 
 		trackEcommerce(action, productId, quantity) {
-			if (
-				window.iTheme
-				&& typeof window.iTheme.setEcommerce === 'function'
-			) {
-				window.iTheme.setEcommerce(action, productId, quantity);
-			}
+			document.dispatchEvent(new CustomEvent('isiteanalytics:ecommerce', {
+				bubbles: true,
+				detail: {
+					event: action,
+					product_id: productId,
+					quantity,
+					source: 'com_ishop.addtocart',
+				},
+			}));
 		}
 	};
 
