@@ -821,6 +821,22 @@ class CategoryModel extends ListModel
     }
 
     /**
+     * Проверяет, нужно ли закрыть текущую страницу фильтра от индексации.
+     *
+     * Страница считается служебным результатом фильтрации, если фильтр активен,
+     * но для его канонического набора условий нет опубликованной записи в
+     * `#__ishop_filters`.
+     *
+     * @return bool
+     * @throws \Exception
+     * @since 1.0.30
+     */
+    public function getFilterSeoNoindex(): bool
+    {
+        return $this->hasActiveCategoryFilter() && !$this->getFilterSeoPage();
+    }
+
+    /**
      * Возвращает ссылки на SEO-страницы фильтра для текущей категории.
      *
      * Метод выбирает опубликованные записи `#__ishop_filters` для текущего

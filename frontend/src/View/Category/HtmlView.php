@@ -62,6 +62,7 @@ class HtmlView extends CategoryView
         $this->filter_object = $this->get('FilterObject');
         $this->filter_seo_page = $this->get('FilterSeoPage');
         $this->filter_seo_links = $this->get('FilterSeoLinks');
+        $filterSeoNoindex = (bool) $this->get('FilterSeoNoindex');
 
         // Флаг указывает не добавлять limitstart=0 к URL адресу
         $this->pagination->hideEmptyLimitstart = true;
@@ -141,6 +142,11 @@ class HtmlView extends CategoryView
             if ($v) {
                 $this->getDocument()->setMetaData($k, $v);
             }
+        }
+
+        // Закрываем от индексации только фильтрованные страницы без SEO-записи.
+        if ($filterSeoNoindex) {
+            $this->getDocument()->setMetaData('robots', 'noindex, nofollow');
         }
 
         parent::display($tpl);
