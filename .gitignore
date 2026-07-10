@@ -8,3 +8,5 @@ AGENTS.md
 opencode.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
+/.codex/
+/.agents/
