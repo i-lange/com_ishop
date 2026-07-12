@@ -20,6 +20,12 @@
                    showon="frontpage_show_slider:1"
                    layout="joomla.form.field.subform.repeatable-table">
                 <form>
+                    <field name="bg_image"
+                           type="media"
+                           schemes="http,https,ftp,ftps,data,file"
+                           validate="url"
+                           relative="true"
+                           label="COM_ISHOP_MENU_SLIDE_BG_IMAGE"/>
                     <field name="image"
                            type="media"
                            schemes="http,https,ftp,ftps,data,file"
@@ -29,6 +35,9 @@
                     <field name="title"
                            type="text"
                            label="COM_ISHOP_MENU_SLIDE_TITLE"/>
+                    <field name="sub_title"
+                           type="text"
+                           label="COM_ISHOP_MENU_SLIDE_SUBTITLE"/>
                     <field name="badge"
                            type="text"
                            label="COM_ISHOP_MENU_SLIDE_BADGE"/>
@@ -43,6 +52,20 @@
                            label="COM_ISHOP_MENU_SLIDE_URL"/>
                 </form>
             </field>
+            <field name="frontpage_show_brand"
+                   type="list"
+                   label="COM_ISHOP_MENU_SHOW_BRAND"
+                   class="form-select-color-state"
+                   validate="options">
+                <option value="0">JHIDE</option>
+                <option value="1">JSHOW</option>
+            </field>
+            <field name="frontpage_brand_text"
+                   type="editor"
+                   label="COM_ISHOP_FIELD_FULLTEXT"
+                   showon="frontpage_show_brand:1"
+                   filter="\Joomla\CMS\Component\ComponentHelper::filterText"
+                   buttons="no"/>
             <field name="frontpage_show_services"
                    type="list"
                    label="COM_ISHOP_MENU_SHOW_SERVICES"
