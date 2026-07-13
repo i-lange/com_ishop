@@ -290,6 +290,92 @@ class Com_IshopInstallerScript extends InstallerScript
         // Добавляем новые типы контента, если таких еще не существует
         $db = $this->db;
 
+        $productContentType = [
+            'type_title'              => 'IshopProduct',
+            'type_alias'              => 'com_ishop.product',
+            'table'                   => json_encode([
+                'special' => [
+                    'dbtable' => '#__ishop_products',
+                    'key'     => 'id',
+                    'type'    => 'ProductTable',
+                    'prefix'  => 'Ilange\\Component\\Ishop\\Administrator\\Table',
+                    'config'  => 'array()',
+                ],
+                'common'  => [
+                    'dbtable' => '#__ucm_content',
+                    'key'     => 'ucm_id',
+                    'type'    => 'Corecontent',
+                    'prefix'  => 'Joomla\\CMS\\Table\\',
+                    'config'  => 'array()',
+                ],
+            ], JSON_UNESCAPED_SLASHES),
+            'rules'                   => '',
+            'field_mappings'          => json_encode([
+                'common'  => [
+                    'core_content_item_id' => 'id',
+                    'core_title'           => 'title',
+                    'core_state'           => 'state',
+                    'core_alias'           => 'alias',
+                    'core_created_time'    => 'created',
+                    'core_modified_time'   => 'modified',
+                    'core_body'            => 'introtext',
+                    'core_hits'            => 'hits',
+                    'core_publish_up'      => 'publish_up',
+                    'core_publish_down'    => 'publish_down',
+                    'core_access'          => 'access',
+                    'core_params'          => 'attribs',
+                    'core_featured'        => 'featured',
+                    'core_metadata'        => 'metadata',
+                    'core_language'        => 'language',
+                    'core_images'          => 'images',
+                    'core_urls'            => 'null',
+                    'core_version'         => 'version',
+                    'core_ordering'        => 'ordering',
+                    'core_metakey'         => 'metakey',
+                    'core_metadesc'        => 'metadesc',
+                    'core_catid'           => 'catid',
+                    'asset_id'             => 'null',
+                    'note'                 => 'null',
+                ],
+                'special' => [
+                    'fulltext' => 'fulltext',
+                ],
+            ], JSON_UNESCAPED_SLASHES),
+            'router'                   => 'iShopHelperRoute::getProductRoute',
+            'content_history_options'  => json_encode([
+                'formFile'      => 'administrator/components/com_ishop/forms/product.xml',
+                'hideFields'    => ['checked_out', 'checked_out_time', 'version'],
+                'ignoreChanges' => ['modified_by', 'modified', 'checked_out', 'checked_out_time', 'version', 'hits', 'ordering'],
+                'convertToInt'  => ['publish_up', 'publish_down', 'featured', 'ordering'],
+                'displayLookup' => [
+                    [
+                        'sourceColumn'  => 'catid',
+                        'targetTable'   => '#__categories',
+                        'targetColumn'  => 'id',
+                        'displayColumn' => 'title',
+                    ],
+                    [
+                        'sourceColumn'  => 'created_by',
+                        'targetTable'   => '#__users',
+                        'targetColumn'  => 'id',
+                        'displayColumn' => 'name',
+                    ],
+                    [
+                        'sourceColumn'  => 'access',
+                        'targetTable'   => '#__viewlevels',
+                        'targetColumn'  => 'id',
+                        'displayColumn' => 'title',
+                    ],
+                    [
+                        'sourceColumn'  => 'modified_by',
+                        'targetTable'   => '#__users',
+                        'targetColumn'  => 'id',
+                        'displayColumn' => 'name',
+                    ],
+                ],
+            ], JSON_UNESCAPED_SLASHES),
+        ];
+
         // Проверяем, существует ли тип com_ishop.product
         $query = $db->getQuery(true);
         $query->select($db->quoteName('type_id'))
@@ -305,30 +391,43 @@ class Com_IshopInstallerScript extends InstallerScript
         $categoryTypeId = $db->loadResult();
 
         // Список столбцов для записей типа контента
-        $columnsArray = [
-            $db->quoteName('type_title'),
-            $db->quoteName('type_alias'),
-            $db->quoteName('table'),
-            $db->quoteName('rules'),
-            $db->quoteName('field_mappings'),
-            $db->quoteName('router'),
-            $db->quoteName('content_history_options'),
+        $columns = [
+            'type_title',
+            'type_alias',
+            'table',
+            'rules',
+            'field_mappings',
+            'router',
+            'content_history_options',
         ];
+        $columnsArray = array_map([$db, 'quoteName'], $columns);
 
-        // Создает тип com_ishop.product
+        // Создает или обновляет тип com_ishop.product для штатной работы тегов UCM
+        $productValues = [];
+        foreach ($columns as $column) {
+            $productValues[] = $db->quote($productContentType[$column]);
+        }
+
         if (!$productTypeId) {
             $query->clear();
             $query->insert($db->quoteName('#__content_types'));
             $query->columns($columnsArray);
-            $query->values([
-                $db->quote('IshopProduct')  . ', ' .
-                $db->quote('com_ishop.product')  . ', ' .
-                $db->quote('{"special"{"dbtable":"#__ishop_products","key":"id","type":"ProductTable","prefix":"Ilange\\Component\\Ishop\\Administrator\\Table","config":"array()"},"common":{"dbtable":"#__ucm_content","key":"ucm_id","type":"Corecontent","prefix":"Joomla\\CMS\\Table\\","config":"array()"}}')  . ', ' .
-                $db->quote('')  . ', ' .
-                $db->quote('{"common":{"core_content_item_id":"id","core_title":"title","core_state":"state","core_alias":"alias","core_created_time":"created","core_modified_time":"modified","core_body":"introtext", "core_hits":"hits","core_publish_up":"publish_up","core_publish_down":"publish_down","core_access":"access", "core_params":"attribs", "core_featured":"featured", "core_metadata":"metadata", "core_language":"language", "core_images":"images", "core_urls":"null", "core_version":"version", "core_ordering":"ordering", "core_metakey":"metakey", "core_metadesc":"metadesc", "core_catid":"catid", "asset_id":"null", "note":"null"},"special":{"fulltext":"fulltext"}}')  . ', ' .
-                $db->quote('iShopHelperRoute::getProductRoute')  . ', ' .
-                $db->quote('{"formFile":"administrator\/components\/com_ishop\/forms\/product.xml","hideFields":["checked_out","checked_out_time","version"],"ignoreChanges":["modified_by", "modified", "checked_out", "checked_out_time", "version", "hits", "ordering"],"convertToInt":["publish_up","publish_down","featured","ordering"],"displayLookup":[{"sourceColumn":"catid","targetTable":"#__categories","targetColumn":"id","displayColumn":"title"},{"sourceColumn":"created_by","targetTable":"#__users","targetColumn":"id","displayColumn":"name"},{"sourceColumn":"access","targetTable":"#__viewlevels","targetColumn":"id","displayColumn":"title"},{"sourceColumn":"modified_by","targetTable":"#__users","targetColumn":"id","displayColumn":"name"}]}')
-            ]);
+            $query->values(implode(', ', $productValues));
+            $db->setQuery($query);
+            $db->execute();
+        } else {
+            $query->clear();
+            $query
+                ->update($db->quoteName('#__content_types'))
+                ->set([
+                    $db->quoteName('type_title') . ' = ' . $db->quote($productContentType['type_title']),
+                    $db->quoteName('table') . ' = ' . $db->quote($productContentType['table']),
+                    $db->quoteName('rules') . ' = ' . $db->quote($productContentType['rules']),
+                    $db->quoteName('field_mappings') . ' = ' . $db->quote($productContentType['field_mappings']),
+                    $db->quoteName('router') . ' = ' . $db->quote($productContentType['router']),
+                    $db->quoteName('content_history_options') . ' = ' . $db->quote($productContentType['content_history_options']),
+                ])
+                ->where($db->quoteName('type_alias') . ' = ' . $db->quote('com_ishop.product'));
             $db->setQuery($query);
             $db->execute();
         }

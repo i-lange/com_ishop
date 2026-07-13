@@ -32,6 +32,11 @@ foreach($this->item->fields as $groups) {
     <?php if ($this->item->introtext !== '') : ?>
     <p class="d-n d-md-block"><?php echo $this->item->introtext; ?></p>
     <?php endif; ?>
+    <?php if (!empty($this->item->tags->itemTags)) : ?>
+        <div class="product_tags mb-2">
+            <?php echo $this->item->tagLayout->render($this->item->tags->itemTags); ?>
+        </div>
+    <?php endif; ?>
     <?php foreach ($this->item->parts as $part) : ?>
         <div class="mb-1 prod_part_type_<?php echo $part->prod_label; ?>">
             <?php if (!empty($part->icon)) : ?>

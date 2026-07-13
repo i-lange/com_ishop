@@ -242,6 +242,10 @@ $tmpl    = $tmpl ? '&tmpl=' . $tmpl : '';
                     <legend><?php echo Text::_('JGLOBAL_FIELDSET_PUBLISHING'); ?></legend>
                     <div><?php echo LayoutHelper::render('joomla.edit.publishingdata', $this); ?></div>
                 </fieldset>
+                <fieldset id="fieldset-tags" class="options-form">
+                    <legend><?php echo Text::_('JTAG'); ?></legend>
+                    <div><?php echo $this->form->renderField('tags'); ?></div>
+                </fieldset>
             </div>
             <div class="col-12 col-lg-6">
                 <fieldset id="fieldset-metadata" class="options-form">
