@@ -220,7 +220,8 @@ CREATE TABLE IF NOT EXISTS `#__ishop_values`
     PRIMARY KEY (`id`),
     KEY `idx_alias` (`alias`(191)),
     KEY `idx_field_id` (`field_id`),
-    KEY `idx_language` (`language`)
+    KEY `idx_language` (`language`),
+    UNIQUE KEY `uniq_field_value_language` (`field_id`, `value`, `language`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   DEFAULT COLLATE = utf8mb4_unicode_ci COMMENT ='Хранение значений характеристик для каталога в iShop';
