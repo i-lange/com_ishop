@@ -400,17 +400,50 @@ class FieldModel extends AdminModel
             }
         }
 
-        if (parent::save($data)) {
-            $fieldId = (int)$this->getState('field.id');
+        $db                = $this->getDatabase();
+        $transactionActive = false;
 
-            if ((int)($data['type'] ?? 0) === 1 && $fieldId > 0) {
-                return $this->saveValues($fieldId, (array)$values, (string)($data['language'] ?? '*'));
+        try {
+            // Сохраняем характеристику и ее значения как одну операцию.
+            $db->transactionStart(true);
+            $transactionActive = true;
+
+            if (!parent::save($data)) {
+                $db->transactionRollback(true);
+                $transactionActive = false;
+
+                return false;
             }
 
-            return true;
-        }
+            $fieldId = (int)$this->getState('field.id');
 
-        return false;
+            if ((int)($data['type'] ?? 0) === 1 && $fieldId > 0 &&
+                !$this->saveValues($fieldId, (array)$values, (string)($data['language'] ?? '*'))) {
+                $db->transactionRollback(true);
+                $transactionActive = false;
+
+                return false;
+            }
+
+            $db->transactionCommit(true);
+            $transactionActive = false;
+
+            return true;
+        } catch (\Throwable $exception) {
+            if ($transactionActive) {
+                try {
+                    $db->transactionRollback(true);
+                } catch (\Throwable) {
+                    // Сохраняем исходную ошибку операции.
+                }
+            }
+
+            if (!$this->getError()) {
+                $this->setError($exception->getMessage());
+            }
+
+            return false;
+        }
     }
 
     /**
@@ -605,7 +638,15 @@ class FieldModel extends AdminModel
             $table->ordering = $value['ordering'];
             $table->language = $language;
 
-            if (!$table->store()) {
+            try {
+                if (!$table->check() || !$table->store()) {
+                    $this->setError($table->getError() ?: Text::_('COM_ISHOP_ERROR_FIELD_VALUE_INVALID'));
+
+                    return false;
+                }
+            } catch (\Throwable $exception) {
+                $this->setError($exception->getMessage());
+
                 return false;
             }
 
@@ -632,7 +673,13 @@ class FieldModel extends AdminModel
             ->getMVCFactory()
             ->createModel('Value', 'Administrator', ['ignore_request' => true]);
 
-        return $valueModel->delete($deleteIds);
+        if (!$valueModel->delete($deleteIds)) {
+            $this->setError($valueModel->getError() ?: Text::_('COM_ISHOP_ERROR_FIELD_VALUE_INVALID'));
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
