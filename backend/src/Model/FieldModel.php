@@ -305,17 +305,13 @@ class FieldModel extends AdminModel
             }
         }
 
-        $values = $data['values'] ?? [];
-
         if ($data = parent::validate($form, $data, $group)) {
-            $data['values'] = $values;
-
             if (!$this->validateTypeChange($data)) {
                 return false;
             }
 
             if ((int)($data['type'] ?? 0) === 1 && !empty($data['id'])) {
-                $values = $this->normaliseValues($values);
+                $values = $this->normaliseValues($data['values'] ?? []);
 
                 if (!$this->validateValues($values)) {
                     return false;
